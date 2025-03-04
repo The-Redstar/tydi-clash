@@ -1,0 +1,12 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:tydi-clash"
+    - path: "./tests/doctests.hs"
+      component: "tydi-clash:doctests"
+    - path: "./tests"
+      component: "tydi-clash:test-library"
+    - path: "./bin/Clashi.hs"
+      component: "tydi-clash:exe:clashi"
+    - path: "./bin/Clash.hs"
+      component: "tydi-clash:exe:clash"

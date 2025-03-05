@@ -1,3 +1,5 @@
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Tydi.Synthesis where
 
@@ -10,18 +12,18 @@ import Tydi.Data
 
 -- synthesis
 -- TODO
-type Synth = Synth' 1 0
+type Synth x = Synth' 1 0 x
 
-type family Synth' (t::Float) (dim::Nat) x where
+type family Synth' (t::Nat) (dim::Nat) x where
   Synth' t dim (L l a)   = L l (Synth' t dim a)
   Synth' t dim (Group a) = Synth' t dim a
   Synth' t dim (a :*: b) = Synth' t dim a :*: Synth' t dim b
   Synth' t dim (Union a) = Synth' t dim (Group (ToGroup a))
 
-  Synth' t dim (LStream dim' sync 'Reverse force c t' user dat) = Reverse (Synth' dim t (LStream dim' sync 'Forward force c t' user dat))
+  Synth' t dim (LStream dim' sync 'Reverse force c t' user dat) = Reverse (Synth' t dim (LStream dim' sync 'Forward force c t' user dat))
   Synth' t dim (LStream dim' sync 'Forward force c t' user dat) = StreamNode
-    PStream c (t*t') (SyncDim dim dim') user (RemoveStreams dat)
-    (Synth' (t*t') (SyncDim dim dim') dat) -- TODO
+    (PStream c (t*t') (SyncDim sync dim dim') user (RemoveStreams dat) 'True)
+    (Synth' (t*t') (SyncDim sync dim dim') dat) -- TODO
 
   Synth' _ _ _ = ()
 
@@ -30,11 +32,22 @@ type family ToGroup a where
   ToGroup a = a
 
 type family Reverse x where
-  Reverse 'Forward = 'Reverse
-  Reverse 'Reverse = 'Forward
+  Reverse (StreamNode p h) = StreamNode (Reverse p) (Reverse h)
 
---  Reverse (PStream c n d u e _sealed) = PStreamReady c n d u e
---  Reverse (PStreamReady c n d u e) = PStream c n d u e 'True
+  Reverse (PStream c n d u e _sealed) = PStreamReady c n d u e
+  Reverse (PStreamReady c n d u e) = PStream c n d u e 'True
+
+  Reverse (L l a)   = L l (Reverse a)
+  Reverse (Group a) = Group (Reverse a)
+  Reverse (a :*: b) = Reverse a :*: Reverse b
+
+  Reverse () = ()
+
+  -- TODO
+
+-- type family ReverseDir x where
+--   ReverseDir 'Forward = 'Reverse
+--   ReverseDir 'Reverse = 'Forward
 
 type family SyncDim sm dprev dcur where
   SyncDim Sync       prev cur = prev + cur

@@ -5,6 +5,8 @@
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Use newtype instead of data" #-}
 
 module Tydi.PStream where
 
@@ -16,52 +18,33 @@ import GHC.TypeLits.KnownNat
 
 
 -- Physical stream
-
-data PStream c n d e u sealed = -- complexity, lanes, dimension, data type, user data
-  PStream {
-    valid :: Bool,
-    data' :: Vec n e,
-    user :: u,
-    strb :: StrbType c n,
-    last :: Vec n (Vec d Bool),
-    stai :: StaiType c n,
-    endi :: Index n }
-
-data PStreamX meta n e u sealed =
+data PStreamX c n d e u sealed = --complexity, lanes, dimension, data type, user data
   PStreamX {
     valid :: Bool,
     dat   :: Vec n e,
     user  :: u,
-    meta  :: meta,
-    endi  :: Index n
+    endi  :: Index n,
+    comp  :: c n d
   }
 
-newtype Level1 (n :: Nat) d = Level1 {last :: Vec d Bool}
-  deriving (SafeStrb n)
+-- Physical stream ready signal
+data PStreamReady c n d e u = Ready | NotReady deriving (Show,BitPack,Generic)
 
-newtype Level2 (n :: Nat) d = Level2 {last :: Vec d Bool}
-  deriving (SafeStrb n)
+-- Complexity levels and their associated data
+data C1 (n :: Nat) (d :: Nat) = C1 {last :: Vec d Bool                                             } deriving (SafeStrb n)
+data C2 (n :: Nat) (d :: Nat) = C2 {last :: Vec d Bool                                             } deriving (SafeStrb n)
+data C3 (n :: Nat) (d :: Nat) = C3 {last :: Vec d Bool                                             } deriving (SafeStrb n)
+data C4 (n :: Nat) (d :: Nat) = C4 {last :: Vec d Bool                                             } deriving (SafeStrb n)
+data C5 (n :: Nat) (d :: Nat) = C5 {last :: Vec d Bool                                             } deriving (SafeStrb n)
+data C6 (n :: Nat) (d :: Nat) = C6 {last :: Vec d Bool        , stai :: Index n                    } deriving (SafeStrb n)
+data C7 (n :: Nat) (d :: Nat) = C7 {last :: Vec d Bool        , stai :: Index n, strb :: Vec n Bool} deriving ()
+data C8 (n :: Nat) (d :: Nat) = C8 {last :: Vec n (Vec d Bool), stai :: Index n, strb :: Vec n Bool} deriving ()
 
-newtype Level3 (n :: Nat) d = Level3 {last :: Vec d Bool}
-  deriving (SafeStrb n)
-
-newtype Level4 (n :: Nat) d = Level4 {last :: Vec d Bool}
-  deriving (SafeStrb n)
-
-newtype Level5 (n :: Nat) d = Level5 {last :: Vec d Bool}
-  deriving (SafeStrb n)
-
-data Level6 n d = Level6 {last :: Vec d Bool, stai :: Index n}
-  deriving (SafeStrb n)
-
-data Level7 n d = Level7 {last :: Vec d Bool, stai :: Index n, strb :: Vec n Bool}
-
-instance KnownNat n => SafeStrb n (Level7 n d) where
+instance KnownNat n => SafeStrb n (C7 n d) where
   safeStrb (Level7 {strb=s}) = s
 
-data Level8 n d = Level8 {last :: Vec n (Vec d Bool), stai :: Index n, strb :: Vec n Bool}
 
-data PStreamReady c n d e u = Ready | NotReady deriving (Show,BitPack,Generic)
+
 
 newtype IfN c a b = IfN (If c a b)
 

@@ -1,55 +1,66 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE OverloadedRecordDot #-}
+-- {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE DeriveAnyClass #-}
+-- {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+-- {-# LANGUAGE StandaloneKindSignatures #-}
 
 module Tydi.PStreamTest where
 
-import Data.Type.Ord (type (>=?))
-import Data.Type.Bool (If)
+-- import Data.Type.Ord (type (>=?))
+-- import Data.Type.Bool (If)
 
 import Clash.Explicit.Prelude hiding (last)
-import GHC.TypeLits.KnownNat
-import Clash.Sized.Internal.BitVector (xToBV)
+-- import GHC.TypeLits.KnownNat
+-- import Clash.Sized.Internal.BitVector (xToBV)
 
 
-data PStream c n = PStream {
-  valid::Bool,
-  strb::StrbType c n
+data PStreamX c last stai strb n d e u sealed = PStream{
+  valid :: Bool,
+  dat  :: Vec n e,
+  user :: u,
+  endi :: Index n,
+  strb :: strb--,
+  -- last :: last,
+  -- stai :: stai
 }
 
-data C1 = C1
-data C8 = C8
+type PStream c n d e u sealed = (c n d) n d e u sealed
 
-type family StrbType c n where
-  StrbType C1 n = ()
-  StrbType C8 n = Vec n Bool
+type C1 n d = PStreamX 1 (Vec d Bool)         ()        ()
+type C8 n d = PStreamX 8 (Vec n (Vec d Bool)) (Index n) (Vec n Bool)
 
-class GetStrb n a where
-  getStrb :: a -> Vec n Bool
-instance (KnownNat n) => GetStrb n (Vec n Bool) where
-  getStrb :: KnownNat n => Vec n Bool -> Vec n Bool
-  getStrb x = x
-instance (KnownNat n) => GetStrb n () where
+class Strb n strb where
+  getStrb :: PStreamX c l s strb n d e u seald -> Vec n Bool
+  mkStrb :: Vec n Bool -> strb
+
+instance (KnownNat n) => Strb n () where
   getStrb _ = repeat True
+  mkStrb  _ = ()
+instance Strb n (Vec n Bool) where
+  getStrb PStream{strb} = strb
+  mkStrb s = s
 
-class Seal p where
-  seal :: p -> p
+class Seal p q where
+  seal :: p -> q
 
-class HasStrb c
-class NoStrb c
-
-class PGetStrb p where
-  getS :: p -> Vec n Bool
-
-instance (HasStrb c) => PGetStrb (PStream c n) where
-  getS PStream{strb} = strb
-instance (NoStrb  c) => PGetStrb (PStream c n) where
-  getS _ = repeat True :: Vec n Bool
-
-instance (KnownNat n) => Seal (PStream c n) where
-  seal p@PStream{strb} = p
-    where s = getS @c
+instance (Strb n strb, KnownNat n) => Seal (PStreamX c last stai strb n d e u 'False) (PStreamX c last stai strb n d e u 'True) where
+  seal PStream{valid=False} = PStream {
+    valid = False,
+    dat   = repeat undefined,
+    user  = undefined,
+    endi  = undefined,
+    strb  = mkStrb @n $ repeat undefined--,
+    -- last  = mk,
+    -- stai :: stai
+  }
+  seal p@PStream{dat,user,endi,strb} = PStream{
+    valid = True,
+    dat   = zipWith (\v s -> if s then v else undefined) dat (getStrb @n @strb p),
+    user  = user,
+    endi  = endi,
+    strb  = strb
+  }

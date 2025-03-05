@@ -1,5 +1,16 @@
 
 
-module Tydi where
+module Tydi (
+  Group,Union,Bits,Null,L,
+  (:+:),(:*:),
 
-import Clash.Explicit.Prelude
+  PStream,
+  C1,C2,C3,C4,C5,C6,C7,C8,
+
+) where
+
+--import Clash.Explicit.Prelude hiding (Bits)
+
+import Tydi.Data
+import Tydi.PStream
+import Tydi.LStream

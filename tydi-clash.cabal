@@ -89,7 +89,9 @@ library
     Tydi.Data
     Tydi.PStream
     Tydi.LStream
-    Tydi.PStreamTest
+    Tydi.Internal.PStream
+    Tydi.Internal.PStreamRead
+    Tydi.Internal.PStreamWrite
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with tydi-clash project in scope

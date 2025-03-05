@@ -34,6 +34,8 @@ cabal.config
 *~
 *.DS_Store
 
+*.lock
+
 # IntelliJ
 /.idea
 *.iml

@@ -2,8 +2,8 @@ cabal-version:       2.4
 name:                tydi-clash
 version:             0.1
 license:             BSD-2-Clause
-author:              John Smith <john@example.com>
-maintainer:          John Smith <john@example.com>
+author:              Marijn Adriaanse <marijn@qbaylogic.com>
+maintainer:          Marijn Adriaanse <marijn@qbaylogic.com>
 
 common common-options
   default-extensions:
@@ -85,7 +85,11 @@ library
   import: common-options
   hs-source-dirs: src
   exposed-modules:
-    Example.Project
+    Tydi
+    Tydi.Data
+    Tydi.PStream
+    Tydi.LStream
+    Tydi.PStreamTest
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with tydi-clash project in scope
@@ -104,31 +108,31 @@ executable clashi
     ghc-options: -dynamic
   build-depends: base, clash-ghc, tydi-clash
 
-test-suite doctests
-  type:             exitcode-stdio-1.0
-  default-language: Haskell2010
-  main-is:          doctests.hs
-  ghc-options:      -Wall -Wcompat -threaded
-  hs-source-dirs:   tests
-  build-depends:
-    base,
-    tydi-clash,
-    doctest-parallel >= 0.2 && < 0.4,
+-- test-suite doctests
+--   type:             exitcode-stdio-1.0
+--   default-language: Haskell2010
+--   main-is:          doctests.hs
+--   ghc-options:      -Wall -Wcompat -threaded
+--   hs-source-dirs:   tests
+--   build-depends:
+--     base,
+--     tydi-clash,
+--     doctest-parallel >= 0.2 && < 0.4,
 
-test-suite test-library
-  import: common-options
-  default-language: Haskell2010
-  hs-source-dirs: tests
-  type: exitcode-stdio-1.0
-  ghc-options: -threaded
-  main-is: unittests.hs
-  other-modules:
-    Tests.Example.Project
-  build-depends:
-    tydi-clash,
-    QuickCheck,
-    clash-prelude-hedgehog,
-    hedgehog,
-    tasty >= 1.2 && < 1.6,
-    tasty-hedgehog,
-    tasty-th
+-- test-suite test-library
+--   import: common-options
+--   default-language: Haskell2010
+--   hs-source-dirs: tests
+--   type: exitcode-stdio-1.0
+--   ghc-options: -threaded
+--   main-is: unittests.hs
+--   other-modules:
+--     Tests.Example.Project
+--   build-depends:
+--     tydi-clash,
+--     QuickCheck,
+--     clash-prelude-hedgehog,
+--     hedgehog,
+--     tasty >= 1.2 && < 1.6,
+--     tasty-hedgehog,
+--     tasty-th

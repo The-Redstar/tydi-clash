@@ -74,6 +74,8 @@ common common-options
     base,
     Cabal,
 
+    template-haskell,
+
     -- clash-prelude will set suitable version bounds for the plugins
     clash-prelude >= 1.8.2 && < 1.10,
     ghc-typelits-natnormalise,
@@ -89,9 +91,13 @@ library
     Tydi.Data
     Tydi.PStream
     Tydi.LStream
+    Tydi.Synthesis
+    Tydi.Optics
+    Tydi.Connect
     Tydi.Internal.PStream
     Tydi.Internal.PStreamRead
     Tydi.Internal.PStreamWrite
+    Tydi.THtest
   default-language: Haskell2010
 
 -- Builds the executable 'clash', with tydi-clash project in scope

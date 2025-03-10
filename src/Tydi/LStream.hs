@@ -2,7 +2,7 @@ module Tydi.LStream where
 
 import Clash.Explicit.Prelude
 
-data LStream dim (sync::SyncMode) (dir::Direction) (force::Bool) c t user dat
+data LStream dim (sync::SyncMode) (dir::Direction) (force::Bool) c t user dat --(c::Nat -> Nat -> Nat -> Nat -> Type -> Type -> Nat -> Type)
 -- Stream(Te,t,d,s,c,r,Tu,x)
 -- data, throughput, dim, sync, complexity, direction, user, force
 -- LStream complexity throughput dim sync direction force user data

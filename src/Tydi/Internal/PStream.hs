@@ -5,6 +5,7 @@
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE LiberalTypeSynonyms #-} -- you need this to use C1-8 as a type argument
 
 module Tydi.Internal.PStream where
 
@@ -26,14 +27,14 @@ type PStream c n d u e sealed = (c n d) n d u e sealed
 data PStreamReady c n d u e = Ready | NotReady deriving (Show)
 
 -- complexity levels   C last                 stai      strb
-type C1 n d = PStreamX 1 (Vec d Bool)         ()        ()
-type C2 n d = PStreamX 2 (Vec d Bool)         ()        ()
-type C3 n d = PStreamX 3 (Vec d Bool)         ()        ()
-type C4 n d = PStreamX 4 (Vec d Bool)         ()        ()
-type C5 n d = PStreamX 5 (Vec n (Vec d Bool)) ()        ()
-type C6 n d = PStreamX 6 (Vec n (Vec d Bool)) (Index n) ()
-type C7 n d = PStreamX 7 (Vec n (Vec d Bool)) (Index n) (Vec n Bool)
-type C8 n d = PStreamX 8 (Vec n (Vec d Bool)) (Index n) (Vec n Bool) --TODO check these!
+type C1 (n::Nat) (d::Nat) = PStreamX 1 (Vec d Bool)         ()        ()
+type C2 (n::Nat) (d::Nat) = PStreamX 2 (Vec d Bool)         ()        ()
+type C3 (n::Nat) (d::Nat) = PStreamX 3 (Vec d Bool)         ()        ()
+type C4 (n::Nat) (d::Nat) = PStreamX 4 (Vec d Bool)         ()        ()
+type C5 (n::Nat) (d::Nat) = PStreamX 5 (Vec n (Vec d Bool)) ()        ()
+type C6 (n::Nat) (d::Nat) = PStreamX 6 (Vec n (Vec d Bool)) (Index n) ()
+type C7 (n::Nat) (d::Nat) = PStreamX 7 (Vec n (Vec d Bool)) (Index n) (Vec n Bool)
+type C8 (n::Nat) (d::Nat) = PStreamX 8 (Vec n (Vec d Bool)) (Index n) (Vec n Bool) --TODO check these!
 
 class Stai n stai where
   getStai :: PStreamX c l stai s n d u e sealed -> Index n
@@ -58,10 +59,13 @@ instance Strb n (Vec n Bool) where
 
 
 -- sealing streams
-class Seal p q where
-  seal :: p -> q
+class Seal p where
+  type SEALED p
+  seal :: p -> SEALED p
 
-instance (Strb n strb, Stai n stai, KnownNat n) => Seal (PStreamX c last stai strb n d u e sealed) (PStreamX c last stai strb n d u e 'True) where
+instance (Strb n strb, Stai n stai, KnownNat n) => Seal (PStreamX c last stai strb n d u e sealed)  where
+  type SEALED (PStreamX c last stai strb n d u e sealed) = PStreamX c last stai strb n d u e 'True
+  seal :: PStreamX c last stai strb n d u e sealed -> PStreamX c last stai strb n d u e 'True
   seal PStream{valid=False} = PStream {
     valid = False,
     dat   = repeat undefined,

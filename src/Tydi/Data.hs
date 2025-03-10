@@ -6,14 +6,14 @@ module Tydi.Data where
 import Clash.Explicit.Prelude
 
 -- labels for Group/Union
-newtype Label l a = L a deriving Show
-type L l a = Label l a
+newtype L l a = L a deriving Show
+--type L l a = Label l a
 
 -- groups
 newtype Group a = Group a deriving (Show,Generic,BitPack)
 
 infixr 5 :*:
-data (:*:) l r = Field l r deriving (Show, Generic, BitPack)
+data (:*:) l r = (:*:) l r deriving (Show, Generic, BitPack)
 
 -- unions
 data Union a = Union{

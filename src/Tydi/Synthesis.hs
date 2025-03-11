@@ -12,20 +12,20 @@ import Tydi.Data
 
 -- synthesis
 -- TODO
-type Synth x = Synth' 1 0 x
+type Synth x = Synth' (C 0) 1 0 x
 
-type family Synth' (t::Nat) (dim::Nat) x where
-  Synth' t dim (L l a)   = L l (Synth' t dim a)
-  Synth' t dim (Group a) = Synth' t dim a
-  Synth' t dim (a :*: b) = Synth' t dim a :*: Synth' t dim b
-  Synth' t dim (Union a) = Synth' t dim (Group (ToGroup a))
+type family Synth' (c::Complexity) (t::Nat) (dim::Nat) x where
+  Synth' c t dim (L l a)   = L l (Synth' c t dim a)
+  Synth' c t dim (Group a) = Synth' c t dim a
+  Synth' c t dim (a :*: b) = Synth' c t dim a :*: Synth' c t dim b
+  Synth' c t dim (Union a) = Synth' c t dim (Group (ToGroup a))
 
-  Synth' t dim (LStream dim' sync 'Reverse force c t' user dat) = Reverse (Synth' t dim (LStream dim' sync 'Forward force c t' user dat))
-  Synth' t dim (LStream dim' sync 'Forward force c t' user dat) = StreamNode
-    (PStream c (t*t') (SyncDim sync dim dim') user (RemoveStreams dat) 'True)
-    (Synth' (t*t') (SyncDim sync dim dim') dat) -- TODO
+  Synth' c t dim (LStream dim' sync 'Reverse force c' t' user dat) = Reverse (Synth' c t dim (LStream dim' sync 'Forward force c' t' user dat))
+  Synth' c t dim (LStream dim' sync 'Forward force c' t' user dat) = StreamNode
+    (PStream (CompInherit c c') (t*t') (SyncDim sync dim dim') user (RemoveStreams dat) 'True)
+    (Synth'  (CompInherit c c') (t*t') (SyncDim sync dim dim') dat) -- TODO
 
-  Synth' _ _ _ = ()
+  Synth' _ _ _ _ = ()
 
 type family ToGroup a where
   ToGroup (a :+: b) = a :*: b
@@ -34,7 +34,7 @@ type family ToGroup a where
 type family Reverse x where
   Reverse (StreamNode p h) = StreamNode (Reverse p) (Reverse h)
 
-  Reverse (PStream c n d u e _sealed) = PStreamReady c n d u e
+  Reverse (PStreamX c _ _ _ n d u e _sealed) = PStreamReady c n d u e
   Reverse (PStreamReady c n d u e) = PStream c n d u e 'True
 
   Reverse (L l a)   = L l (Reverse a)
@@ -55,6 +55,9 @@ type family SyncDim sm dprev dcur where
   SyncDim Desync     prev cur = prev + cur
   SyncDim FlatDesync prev cur = cur
 
+type family CompInherit (cp :: Complexity) (c :: Complexity) where
+  CompInherit cp (C 0) = cp
+  CompInherit _ c = c
 
 type family RemoveStreams x where
   RemoveStreams (LStream _ _ _ _ _ _ _ _) = ()

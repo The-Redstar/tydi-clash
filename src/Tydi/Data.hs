@@ -9,6 +9,9 @@ import Clash.Explicit.Prelude
 newtype L l a = L a deriving Show
 --type L l a = Label l a
 
+infixl 4 >::
+type (>::) l a = L l a
+
 -- groups
 newtype Group a = Group a deriving (Show,Generic,BitPack)
 

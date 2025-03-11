@@ -31,7 +31,7 @@ class TydiSynthesizable a where
   synthData   :: a -> Q Type
 
 instance (TydiSynthesizable e) => TydiSynthesizable (LStreamTH e) where
-  synthBundle LStream{dim,sync,dir,force,c,t,user,dat} = [t|StreamNode (PStream C8 $(return $ LitT (NumTyLit $ fromIntegral n)) $(return $ LitT (NumTyLit $ fromIntegral dim)) $user $(synthData dat) 'True) $(synthBundle dat)|]
+  synthBundle LStream{dim,sync,dir,force,c,t,user,dat} = [t|StreamNode (PStream (C 8) $(return $ LitT (NumTyLit $ fromIntegral n)) $(return $ LitT (NumTyLit $ fromIntegral dim)) $user $(synthData dat) 'True) $(synthBundle dat)|]
     where n = t
   synthData _ = [t|()|]
 

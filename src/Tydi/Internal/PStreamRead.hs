@@ -93,23 +93,34 @@ instance Strb (PStreamTransfer c l s (Vec n Bool) n d u e) where
   getStrb PStreamTransfer{strb} = strb
   mkStrb s = s
 
+-- LAST
+class Last p where
+  mkLast  :: Vec (Lanes p) (Vec (Dims p) Bool) -> LastType p
+instance (KnownNat n,KnownNat d) => Last (PStreamX c (Vec n (Vec d Bool)) s st n d u e sealed) where
+  mkLast l = l
+instance (KnownNat d, n~n1+1) => Last (PStreamX c (Vec d Bool) s st n d u e sealed) where
+  mkLast = head
+instance (KnownNat n,KnownNat d) => Last (PStreamTransfer c (Vec n (Vec d Bool)) s st n d u e) where
+  mkLast l = l
+instance (KnownNat d, n~n1+1) => Last (PStreamTransfer c (Vec d Bool) s st n d u e) where
+  mkLast = head
 
-
+-- DATA, USER, ENDI, LAST
 class GetPStreamFields a where
-  type DataType a
-  type UserType a
-  type EndiType a
-  type LastType a
-  rawGetData :: a -> DataType a -- ^ Get the data lanes if there is a transfer. Note that these fields might not all contain valid data!
-  getUser :: a -> UserType a -- ^ Get the `user` data if there is a transfer.
-  getEndi :: a -> EndiType a -- ^ Get the `endi` index if there is a transfer.
-  getLast :: a -> LastType a -- ^ Get the `last` data if there is a transfer.
+  type SafeDataType a
+  type SafeUserType a
+  type SafeEndiType a
+  type SafeLastType a
+  rawGetData :: a -> SafeDataType a -- ^ Get the data lanes if there is a transfer. Note that these fields might not all contain valid data!
+  getUser :: a -> SafeUserType a -- ^ Get the `user` data if there is a transfer.
+  getEndi :: a -> SafeEndiType a -- ^ Get the `endi` index if there is a transfer.
+  getLast :: a -> SafeLastType a -- ^ Get the `last` data if there is a transfer.
 
 instance GetPStreamFields (PStreamX c last stai strb n d u e sealed) where
-  type DataType (PStreamX c last stai strb n d u e sealed) = Maybe (Vec n e)
-  type UserType (PStreamX c last stai strb n d u e sealed) = Maybe u
-  type EndiType (PStreamX c last stai strb n d u e sealed) = Maybe (Index n)
-  type LastType (PStreamX c last stai strb n d u e sealed) = Maybe last
+  type SafeDataType (PStreamX c last stai strb n d u e sealed) = Maybe (Vec n e)
+  type SafeUserType (PStreamX c last stai strb n d u e sealed) = Maybe u
+  type SafeEndiType (PStreamX c last stai strb n d u e sealed) = Maybe (Index n)
+  type SafeLastType (PStreamX c last stai strb n d u e sealed) = Maybe last
   rawGetData PStream{valid=False} = Nothing
   rawGetData PStream{dat} = Just dat
   getUser PStream{valid=False} = Nothing
@@ -119,12 +130,11 @@ instance GetPStreamFields (PStreamX c last stai strb n d u e sealed) where
   getLast PStream{valid=False} = Nothing
   getLast PStream{last} = Just last
 
--- DATA, USER, ENDI, LAST
 instance GetPStreamFields (PStreamTransfer c last stai strb n d u e) where
-  type DataType (PStreamTransfer c last stai strb n d u e) = Vec n e
-  type UserType (PStreamTransfer c last stai strb n d u e) = u
-  type EndiType (PStreamTransfer c last stai strb n d u e) = Index n
-  type LastType (PStreamTransfer c last stai strb n d u e) = last
+  type SafeDataType (PStreamTransfer c last stai strb n d u e) = Vec n e
+  type SafeUserType (PStreamTransfer c last stai strb n d u e) = u
+  type SafeEndiType (PStreamTransfer c last stai strb n d u e) = Index n
+  type SafeLastType (PStreamTransfer c last stai strb n d u e) = last
   rawGetData PStreamTransfer{dat} = dat
   getUser PStreamTransfer{user} = user
   getEndi PStreamTransfer{endi} = endi

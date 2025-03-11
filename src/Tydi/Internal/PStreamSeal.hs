@@ -1,6 +1,6 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module PStreamSeal where
+module Tydi.Internal.PStreamSeal where
 
 
 import Tydi.Internal.PStream
@@ -15,6 +15,7 @@ class Seal p where
 instance (
     Strb (PStreamX c last stai strb n d u e sealed),
     Stai (PStreamX c last stai strb n d u e sealed),
+    Last (PStreamX c last stai strb n d u e sealed),
     KnownNat n
   ) => Seal (PStreamX c last stai strb n d u e sealed)  where
   type SEALED (PStreamX c last stai strb n d u e sealed) = PStreamX c last stai strb n d u e 'True
@@ -26,7 +27,7 @@ instance (
     stai  = undefined,
     endi  = undefined,
     strb  = mkStrb @(PStreamX c last stai strb n d u e sealed) $ repeat undefined,
-    last  = undefined
+    last  = mkLast @(PStreamX c last stai strb n d u e sealed) $ repeat undefined
   }
   seal p@PStream{dat,user,stai,endi,last} = PStream{
     valid = True,

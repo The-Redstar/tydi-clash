@@ -6,6 +6,7 @@ module Tydi.Internal.PStreamSeal where
 import Tydi.Internal.PStream
 import Tydi.Internal.PStreamRead
 import Clash.Explicit.Prelude hiding (last)
+import qualified Clash.Sized.Vector as Vector
 
 -- sealing streams
 class Seal p where

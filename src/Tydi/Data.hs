@@ -9,7 +9,7 @@ import Clash.Explicit.Prelude
 newtype L l a = L a deriving Show
 --type L l a = Label l a
 
-infixl 4 >::
+infixl 7 >::
 type (>::) l a = L l a
 
 -- groups
@@ -50,6 +50,9 @@ type Null = ()
 -- Optics
 -- TODO
 
+
+-- bundle
+-- TODO
 
 
 -- Shockwaves

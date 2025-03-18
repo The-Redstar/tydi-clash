@@ -35,18 +35,16 @@ data PStreamTransfer c last stai strb n d u e = PStreamTransfer{
 type PStream c n d u e sealed = (ApplyComplexity c n d) n d u e sealed
 data PStreamReady c n d u e = Ready | NotReady deriving (Show)
 
-newtype Complexity = C Nat -- why even add this wrapper? wouldn't Nat be fine?
+data Complexity = C Nat | CInherit -- why even add this wrapper? wouldn't Nat be fine?
 
-cInherit :: Complexity
-cInherit=C 0
 
 type family ApplyComplexity (f :: Complexity) (n :: Nat) (d :: Nat) where
-  ApplyComplexity (C 1) (n::Nat) (d::Nat) = PStreamX (C 1) (Vec d Bool)         ()        ()
-  ApplyComplexity (C 2) (n::Nat) (d::Nat) = PStreamX (C 2) (Vec d Bool)         ()        ()
-  ApplyComplexity (C 3) (n::Nat) (d::Nat) = PStreamX (C 3) (Vec d Bool)         ()        ()
-  ApplyComplexity (C 4) (n::Nat) (d::Nat) = PStreamX (C 4) (Vec d Bool)         ()        ()
-  ApplyComplexity (C 5) (n::Nat) (d::Nat) = PStreamX (C 5) (Vec n (Vec d Bool)) ()        ()
-  ApplyComplexity (C 6) (n::Nat) (d::Nat) = PStreamX (C 6) (Vec n (Vec d Bool)) (Index n) ()
+  ApplyComplexity (C 1) (n::Nat) (d::Nat) = PStreamX (C 1) (Vec d Bool)         ()        Bool
+  ApplyComplexity (C 2) (n::Nat) (d::Nat) = PStreamX (C 2) (Vec d Bool)         ()        Bool
+  ApplyComplexity (C 3) (n::Nat) (d::Nat) = PStreamX (C 3) (Vec d Bool)         ()        Bool
+  ApplyComplexity (C 4) (n::Nat) (d::Nat) = PStreamX (C 4) (Vec d Bool)         ()        Bool
+  ApplyComplexity (C 5) (n::Nat) (d::Nat) = PStreamX (C 5) (Vec n (Vec d Bool)) ()        Bool
+  ApplyComplexity (C 6) (n::Nat) (d::Nat) = PStreamX (C 6) (Vec n (Vec d Bool)) (Index n) Bool
   ApplyComplexity (C 7) (n::Nat) (d::Nat) = PStreamX (C 7) (Vec n (Vec d Bool)) (Index n) (Vec n Bool)
   ApplyComplexity (C 8) (n::Nat) (d::Nat) = PStreamX (C 8) (Vec n (Vec d Bool)) (Index n) (Vec n Bool) --TODO check these!
 
@@ -60,6 +58,9 @@ type family Dims p where
   Dims (PStreamX c last stai strb n d u e sealed) = d
   Dims (PStreamTransfer c last stai strb n d u e) = d
 
+type family DataType p where
+  DataType (PStreamX c last stai strb n d u e sealed) = e
+  DataType (PStreamTransfer c last stai strb n d u e) = e
 
 type family StaiType p where
   StaiType (PStreamX c last stai strb n d u e sealed) = stai

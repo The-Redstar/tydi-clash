@@ -56,7 +56,7 @@ type family SyncDim sm dprev dcur where
   SyncDim FlatDesync prev cur = cur
 
 type family CompInherit (cp :: Complexity) (c :: Complexity) where
-  CompInherit cp (C 0) = cp
+  CompInherit cp CInherit = cp
   CompInherit _ c = c
 
 type family RemoveStreams x where
@@ -72,4 +72,7 @@ type family RemoveStreams x where
 data StreamNode p h = StreamNode{pstream::p,hierarchy::h}
 
 -- optics
+-- TODO
+
+-- bundle
 -- TODO

@@ -5,9 +5,7 @@ module Tydi.PStream (
 
   -- Reading
   getTransfer,isValid,
-  rawGetData,getDataStrobed,
-  getStai,getEndi,getLast,getUser,getStrb,
-  -- unsafeGetStai,unsafeGetStrb,
+
 
   -- Writing
   fromTransfer,fromTransferM,

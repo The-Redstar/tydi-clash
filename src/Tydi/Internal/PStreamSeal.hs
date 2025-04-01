@@ -1,12 +1,15 @@
 {-# LANGUAGE UndecidableInstances #-}
 
-module Tydi.Internal.PStreamSeal where
+module Tydi.Internal.PStreamSeal (Seal(..)) where
 
 
 import Tydi.Internal.PStream
 import Tydi.Internal.PStreamRead
 import Clash.Explicit.Prelude hiding (last)
 import qualified Clash.Sized.Vector as Vector
+import Data.Maybe (fromJust)
+import Tydi.Internal.PStream (PStreamTransfer(PStreamTransfer))
+
 
 -- sealing streams
 class Seal p where
@@ -14,9 +17,11 @@ class Seal p where
   seal :: p -> SEALED p
 
 instance (
-    Strb (PStreamX c last stai strb n d u e sealed),
-    Stai (PStreamX c last stai strb n d u e sealed),
-    Last (PStreamX c last stai strb n d u e sealed),
+    Strb (PStreamTransfer c last stai strb n d u e),
+    Stai (PStreamTransfer c last stai strb n d u e),
+    Last (PStreamTransfer c last stai strb n d u e),
+    Data (PStreamTransfer c last stai strb n d u e),
+    KnownNat d,
     KnownNat n
   ) => Seal (PStreamX c last stai strb n d u e sealed)  where
   type SEALED (PStreamX c last stai strb n d u e sealed) = PStreamX c last stai strb n d u e 'True
@@ -27,20 +32,37 @@ instance (
     user  = undefined,
     stai  = undefined,
     endi  = undefined,
-    strb  = mkStrb @(PStreamX c last stai strb n d u e sealed) $ repeat undefined,
-    last  = mkLast @(PStreamX c last stai strb n d u e sealed) $ repeat undefined
+    strb  = mkStrb @(PStreamTransfer c last stai strb n d u e) undefined $ repeat undefined,
+    last  = mkLast @(PStreamTransfer c last stai strb n d u e) $ repeat $ repeat undefined
   }
-  seal p@PStream{dat,user,stai,endi,last} = PStream{
+  seal p@PStream{dat,user,stai,endi,last,strb} = PStream{
     valid = True,
-    dat   = dat',
+    dat   = dat', -- everything outside stai,endi,strb set to undefined
     user  = user,
-    stai  = stai,
+    stai  = stai, -- stai if present
     endi  = endi,
-    strb  = mkStrb @(PStreamX c last stai strb n d u e sealed) strb',
+    strb  = strb', -- if single bit strobe, keep strobe, else, set all outside stai,endi to undefined
     last  = last
   }
     where
-      dat'  = zipWith3 god indicesI dat (unsafeGetStrb p) -- constrain by stai/endi, then strb
-      strb' = zipWith  gos indicesI     (unsafeGetStrb p) -- constrain by stai/endi
-      god i d s = if (i >= unsafeGetStai p) && (i <= endi) && s then d else undefined
-      gos i s   = if (i >= unsafeGetStai p) && (i <= endi)      then s else undefined
+      dat'  = map fromJust (unsafeGetDataStrobed p)
+      strb' = mkStrb @(PStreamTransfer c last stai strb n d u e) strb strb'' -- select between original and undefined sliced
+      strb'' = zipWith go indicesI $ unsafeGetStrbExt p -- replace values outside stai,endi with undefined
+      go i s = if (i >= unsafeGetStaiExt p) && (i <= endi) then s else undefined
+
+
+      gos i s   = if (i >= unsafeGetStaiExt p) && (i <= endi)      then s else undefined
+-- TODO: Sealing transfers
+-- TODO: remove sealed parameter from type
+
+
+unsafeGetDataStrobed ::
+  ( Stai (PStreamTransfer c last stai strb n d u e)
+  , Strb (PStreamTransfer c last stai strb n d u e)
+  , Data (PStreamTransfer c last stai strb n d u e)
+  ) => PStreamX c last stai strb n d u e sealed -> Vec n (Maybe e)
+unsafeGetDataStrobed = getDataStrobed . unsafeGetTransfer
+unsafeGetStaiExt :: (Stai (PStreamTransfer c last stai strb n d u e)) => PStreamX c last stai strb n d u e sealed -> Index n
+unsafeGetStaiExt = getStaiExt . unsafeGetTransfer
+unsafeGetStrbExt :: (Strb (PStreamTransfer c last stai strb n d u e)) => PStreamX c last stai strb n d u e sealed -> Vec n Bool
+unsafeGetStrbExt = getStrbExtRaw . unsafeGetTransfer

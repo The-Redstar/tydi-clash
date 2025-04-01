@@ -34,5 +34,5 @@ instance (
     stai=undefined,
     endi=undefined,
     last=mkLast @(PStreamX c last stai strb n d u e 'False) $ repeat undefined,
-    strb=mkStrb @(PStreamX c last stai strb n d u e 'False) $ repeat undefined
+    strb=mkStrb @(PStreamX c last stai strb n d u e 'False) undefined $ repeat undefined
   }

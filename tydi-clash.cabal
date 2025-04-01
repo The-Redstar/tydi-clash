@@ -89,6 +89,7 @@ library
   exposed-modules:
     Tydi
     Tydi.Data
+    Tydi.Slice
     Tydi.PStream
     Tydi.LStream
     Tydi.Synthesis

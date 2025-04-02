@@ -89,16 +89,17 @@ library
   exposed-modules:
     Tydi
     Tydi.Data
+    Tydi.Prefix
     Tydi.Slice
     Tydi.PStream
     Tydi.LStream
     Tydi.Synthesis
     Tydi.Optics
     Tydi.Connect
-    Tydi.Internal.PStream
-    Tydi.Internal.PStreamRead
-    Tydi.Internal.PStreamWrite
-    Tydi.Internal.PStreamSeal
+    -- Tydi.Internal.PStream
+    -- Tydi.Internal.PStreamRead
+    -- Tydi.Internal.PStreamWrite
+    -- Tydi.Internal.PStreamSeal
     -- Tydi.THtest
   default-language: Haskell2010
 

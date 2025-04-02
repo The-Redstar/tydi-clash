@@ -5,9 +5,12 @@ module Tydi.Synthesis where
 
 import Clash.Explicit.Prelude
 
+import Optics.Lens
+
 import Tydi.Internal.PStream
 import Tydi.LStream
 import Tydi.Data
+import Optics.Core
 
 
 -- synthesis
@@ -69,10 +72,17 @@ type family RemoveStreams x where
   RemoveStreams x = x
 
 -- stream node
-data StreamNode p h = StreamNode{pstream::p,hierarchy::h}
+data StreamNode p h = StreamNode{stream::p,child::h}
 
 -- optics
--- TODO
+_stream :: Lens (StreamNode p h) (StreamNode p' h) p p'
+_stream = lens (\StreamNode{stream} -> stream) (\sn stream -> sn{stream})
 
--- bundle
--- TODO
+_child :: Lens (StreamNode p h) (StreamNode p h') h h'
+_child = lens (\StreamNode{child} -> child) (\sn child -> sn{child})
+
+-- bundle/unbundle
+instance (Bundle h) => Bundle (StreamNode p h) where
+  type Unbundled dom (StreamNode p h) = (StreamNode (Signal dom p) (Unbundled dom h))
+  bundle (StreamNode ps hs) = StreamNode <$> ps <*> bundle hs
+  unbundle nodes = StreamNode ((^. getting _stream) <$> nodes) $ unbundle ((^. getting _child) <$> nodes)

@@ -43,9 +43,9 @@ type family ApplyComplexity (f :: Complexity) (n :: Nat) (d :: Nat) where
   ApplyComplexity (C 2) (n::Nat) (d::Nat) = PStreamX (C 2) (Vec d Bool)         ()        Bool
   ApplyComplexity (C 3) (n::Nat) (d::Nat) = PStreamX (C 3) (Vec d Bool)         ()        Bool
   ApplyComplexity (C 4) (n::Nat) (d::Nat) = PStreamX (C 4) (Vec d Bool)         ()        Bool
-  ApplyComplexity (C 5) (n::Nat) (d::Nat) = PStreamX (C 5) (Vec n (Vec d Bool)) ()        Bool
-  ApplyComplexity (C 6) (n::Nat) (d::Nat) = PStreamX (C 6) (Vec n (Vec d Bool)) (Index n) Bool
-  ApplyComplexity (C 7) (n::Nat) (d::Nat) = PStreamX (C 7) (Vec n (Vec d Bool)) (Index n) (Vec n Bool)
+  ApplyComplexity (C 5) (n::Nat) (d::Nat) = PStreamX (C 5) (Vec d Bool)         ()        Bool
+  ApplyComplexity (C 6) (n::Nat) (d::Nat) = PStreamX (C 6) (Vec d Bool)         (Index n) Bool
+  ApplyComplexity (C 7) (n::Nat) (d::Nat) = PStreamX (C 7) (Vec d Bool)         (Index n) (Vec n Bool)
   ApplyComplexity (C 8) (n::Nat) (d::Nat) = PStreamX (C 8) (Vec n (Vec d Bool)) (Index n) (Vec n Bool) --TODO check these!
 
 

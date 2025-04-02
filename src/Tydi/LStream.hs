@@ -22,8 +22,6 @@ data Direction = Forward | Reverse deriving (Show)
 
 
 
-
-
 -- optics
 -- TODO
 

@@ -44,16 +44,30 @@ type Bits = BitVector
 -- null
 type Null = ()
 
--- isomorphics
+-- ISOMORPHICS
 -- TODO
 
--- Optics
+-- OPTICS
 -- TODO
 
 
--- bundle
+-- SIGNAL BUNDLING
 -- TODO
 
+instance (Bundle a) => Bundle (Group a) where
+  type Unbundled dom (Group a) = Group (Unbundled dom a)
+  bundle (Group as) = Group <$> bundle as
+  unbundle groups = Group $ unbundle ((\(Group a) -> a) <$> groups)
+
+instance (Bundle a, Bundle b) => Bundle (a :*: b) where
+  type Unbundled dom (a :*: b) = Unbundled dom a :*: Unbundled dom b
+  bundle (as :*: bs) = (:*:) <$> bundle as <*> bundle bs
+  unbundle groups = unbundle ((\(a :*: _) -> a) <$> groups) :*: unbundle ((\(_ :*: b) -> b) <$> groups)
+
+instance Bundle (L l a) where
+  type Unbundled dom (L l a) = L l (Signal dom a)
+  bundle (L as) = L <$> as
+  unbundle labels = L ((\(L a) -> a) <$> labels)
 
 -- Shockwaves
 -- deriving show and split for group, union

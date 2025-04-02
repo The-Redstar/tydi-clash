@@ -74,7 +74,8 @@ common common-options
     base,
     Cabal,
 
-    template-haskell,
+    -- template-haskell,
+    optics-core,
 
     -- clash-prelude will set suitable version bounds for the plugins
     clash-prelude >= 1.8.2 && < 1.10,

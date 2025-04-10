@@ -84,6 +84,9 @@ instance
       -- , n~n0+1
       ) => CompleteComplexity' c n d u e
 
+
+data PStreamReady c n d u e = Ready | NotReady deriving (Show,Generic,BitPack)
+
 class (CompleteComplexity' (ComplexityLevel a) (Lanes a) (Dims a) (UserType a) (DataType a)) => CompleteComplexity a
 instance (CompleteComplexity' c n d u e) => CompleteComplexity (PStreamTransfer c n d u e)
 instance (CompleteComplexity' c n d u e) => CompleteComplexity (PStream c n d u e)
@@ -191,7 +194,7 @@ getDataRaw PSTransfer{dat} = dat
 class DataFunc p bstai bstrb where
   getDataSliced' :: p -> SliceStrbType p
   getDataStrobed' :: p -> Vec (Lanes p) (Maybe (DataType p))
-instance (HasStai c ~ False, HasMultiStrb c ~ False) => DataFunc (PStreamTransfer c n d u e) False False where
+instance (HasStai c ~ False, HasMultiStrb c ~ False,n~n0+1) => DataFunc (PStreamTransfer c n d u e) False False where
   getDataSliced' PSTransfer{dat,endi,strb} = fromBool strb $ prefix endi dat
   getDataStrobed' PSTransfer{dat,endi,strb} = zipWith fromBool (maskRange 0 endi (repeat strb)) dat
 instance (HasStai c ~ True, HasMultiStrb c ~ False) => DataFunc (PStreamTransfer c n d u e) True False where
@@ -327,7 +330,7 @@ class FromSlice a bstai bstrb where
 instance (CompleteComplexity' c n d u e, HasStai c ~ False, HasMultiStrb c ~ False)
   => FromSlice (PStreamTransfer c n d u e) False False where -- Maybe Prefix
   fromSlice' s last user = fromSignals dat last user () endi strb
-    where dat  = maybe (repeat undefined) Prefix.unsafeFromPrefix s
+    where dat  = maybe (repeat undefined) Prefix.unsafeToVec s
           endi = maybe maxBound Prefix.end s
           strb = isJust s
 instance (CompleteComplexity' c n d u e, HasStai c ~ True, HasMultiStrb c ~ False)
@@ -491,7 +494,7 @@ _endi = to getEndi
 _last :: Lens' (PStreamTransfer c n d u e) (LastType' c n d)
 _last = lens getLast upd
   where upd :: PStreamTransfer c n d u e -> LastType' c n d -> PStreamTransfer c n d u e
-        upd tf last = tf{last}
+        upd tf last = tf{last=last}
 
 -- _user (g/s)
 _user :: (CompleteComplexity' c n d u' e) => Lens (PStreamTransfer c n d u e) (PStreamTransfer c n d u' e) u u'
@@ -508,6 +511,11 @@ _tf = prism Transfer matcher
 _transfer :: (CompleteComplexity' c n' d' u' e')
   => Prism (PStream c n d u e) (PStream c n' d' u' e') (PStreamTransfer c n d u e) (PStreamTransfer c n' d' u' e')
 _transfer = _tf
+
+
+
+
+
 
 -- shockwaves
 -- TODO

@@ -89,6 +89,9 @@ library
   hs-source-dirs: src
   exposed-modules:
     Tydi
+    Tydi.Label
+    Tydi.Group
+    Tydi.Union
     Tydi.Data
     Tydi.Prefix
     Tydi.Slice

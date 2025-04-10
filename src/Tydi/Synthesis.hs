@@ -7,7 +7,7 @@ import Clash.Explicit.Prelude
 
 import Optics.Lens
 
-import Tydi.Internal.PStream
+import Tydi.PStream
 import Tydi.LStream
 import Tydi.Data
 import Optics.Core
@@ -18,31 +18,31 @@ import Optics.Core
 type Synth x = Synth' (C 0) 1 0 x
 
 type family Synth' (c::Complexity) (t::Nat) (dim::Nat) x where
-  Synth' c t dim (L l a)   = L l (Synth' c t dim a)
+  Synth' c t dim (l >:: a) = l >:: Synth' c t dim a
   Synth' c t dim (Group a) = Synth' c t dim a
-  Synth' c t dim (a :*: b) = Synth' c t dim a :*: Synth' c t dim b
+  Synth' c t dim (a :&: b) = Synth' c t dim a :&: Synth' c t dim b
   Synth' c t dim (Union a) = Synth' c t dim (Group (ToGroup a))
 
   Synth' c t dim (LStream dim' sync 'Reverse force c' t' user dat) = Reverse (Synth' c t dim (LStream dim' sync 'Forward force c' t' user dat))
   Synth' c t dim (LStream dim' sync 'Forward force c' t' user dat) = StreamNode
-    (PStream (CompInherit c c') (t*t') (SyncDim sync dim dim') user (RemoveStreams dat) 'True)
-    (Synth'  (CompInherit c c') (t*t') (SyncDim sync dim dim') dat) -- TODO
+    (PStream (CompInherit c c') (t*t') (SyncDim sync dim dim') user (RemoveStreams dat))
+    (Synth'  (CompInherit c c') (t*t') (SyncDim sync dim dim') dat) -- TODO: other throughput type
 
   Synth' _ _ _ _ = ()
 
 type family ToGroup a where
-  ToGroup (a :+: b) = a :*: b
+  ToGroup (a :|: b) = a :&: b
   ToGroup a = a
 
 type family Reverse x where
   Reverse (StreamNode p h) = StreamNode (Reverse p) (Reverse h)
 
-  Reverse (PStreamX c _ _ _ n d u e _sealed) = PStreamReady c n d u e
-  Reverse (PStreamReady c n d u e) = PStream c n d u e 'True
+  Reverse (PStream c n d u e ) = PStreamReady c n d u e
+  Reverse (PStreamReady c n d u e) = PStream c n d u e
 
-  Reverse (L l a)   = L l (Reverse a)
+  Reverse (l >:: a) = l >:: Reverse a
+  Reverse (a :&: b) = Reverse a :&: Reverse b
   Reverse (Group a) = Group (Reverse a)
-  Reverse (a :*: b) = Reverse a :*: Reverse b
 
   Reverse () = ()
 
@@ -64,11 +64,11 @@ type family CompInherit (cp :: Complexity) (c :: Complexity) where
 
 type family RemoveStreams x where
   RemoveStreams (LStream _ _ _ _ _ _ _ _) = ()
-  RemoveStreams (L l a)   = L l (RemoveStreams a)
+  RemoveStreams (l >:: a)   = l >:: RemoveStreams a
   RemoveStreams (Group a) = Group (RemoveStreams a)
   RemoveStreams (Union a) = Union (RemoveStreams a)
-  RemoveStreams (a :*: b) = RemoveStreams a :*: RemoveStreams b
-  RemoveStreams (a :+: b) = RemoveStreams a :+: RemoveStreams b
+  RemoveStreams (a :&: b) = RemoveStreams a :&: RemoveStreams b
+  RemoveStreams (a :|: b) = RemoveStreams a :|: RemoveStreams b
   RemoveStreams x = x
 
 -- stream node

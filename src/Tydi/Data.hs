@@ -1,8 +1,8 @@
 {-# LANGUAGE UndecidableInstances #-}
 -- {-# LANGUAGE StandaloneDeriving #-}
 
-module Tydi.Data (module Tydi.Group, module Tydi.Union) where
+module Tydi.Data (module Tydi.Data.Group, module Tydi.Data.Union) where
 
 -- import Clash.Explicit.Prelude
-import Tydi.Group
-import Tydi.Union
+import Tydi.Data.Group
+import Tydi.Data.Union

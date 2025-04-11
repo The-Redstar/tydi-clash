@@ -1,7 +1,7 @@
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE PatternSynonyms #-}
 
-module Tydi.Range (Range, pattern Range,range,safeRange,unsafeRange,start,end,contains,full) where
+module Tydi.Data.Range (Range, pattern Range,range,safeRange,unsafeRange,start,end,contains,full) where
 import Clash.Prelude
 
 -- Inclusive index range meant for slicing vectors

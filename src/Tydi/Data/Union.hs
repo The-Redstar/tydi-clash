@@ -5,10 +5,15 @@
 
 
 
-module Tydi.Union where
+module Tydi.Data.Union (
+  Union, (:|:),
+  HasVariant(getVariant,mkVariant,_variant),VariantType,
+  CheckVariant,
+  module Tydi.Data.Label,
+) where
 
 import Clash.Explicit.Prelude
-import Tydi.Label ( type (>::) )
+import Tydi.Data.Label ( type (>::) )
 -- import Data.Proxy
 import Optics.Prism
 import Data.Proxy
@@ -83,9 +88,6 @@ instance (
       i :: Index (UnionCount a)
       i = fromSNat $ SNat @(LabelIndex lbl 0 a)
       bits = resize $ pack x
-
--- OPTICS
--- TODO
 
 
 -- ISOMORPHICS

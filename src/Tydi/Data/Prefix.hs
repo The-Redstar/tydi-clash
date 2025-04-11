@@ -6,7 +6,7 @@
 {-# HLINT ignore "Move brackets to avoid $" #-}
 {-# LANGUAGE PatternSynonyms #-}
 
-module Tydi.Prefix where
+module Tydi.Data.Prefix where
 import Clash.Explicit.Prelude hiding (
   (!!),at,
   head,last,

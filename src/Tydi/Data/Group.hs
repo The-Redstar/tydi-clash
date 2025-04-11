@@ -5,18 +5,18 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FlexibleInstances #-}
 
-module Tydi.Group (
+module Tydi.Data.Group (
   Group(..), (:&:)(..),
   HasField(FieldType,getField,setField,_field),
   CheckField,
-  module Tydi.Label,
+  module Tydi.Data.Label,
 ) where
 
 import Clash.Explicit.Prelude
 -- import Data.Type.Bool (If)
 
 import Optics.Lens
-import Tydi.Label (type (>::)(..))
+import Tydi.Data.Label (type (>::)(..))
 
 -- groups
 newtype Group a = Group a deriving (Generic,BitPack)

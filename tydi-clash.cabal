@@ -89,17 +89,16 @@ library
   hs-source-dirs: src
   exposed-modules:
     Tydi
-    Tydi.Label
-    Tydi.Group
-    Tydi.Union
     Tydi.Data
-    Tydi.Range
-    Tydi.Prefix
-    Tydi.Slice
+    Tydi.Data.Label
+    Tydi.Data.Group
+    Tydi.Data.Union
+    Tydi.Data.Range
+    Tydi.Data.Prefix
+    Tydi.Data.Slice
     Tydi.PStream
     Tydi.LStream
     Tydi.Synthesis
-    Tydi.Optics
     Tydi.Connect
     -- Tydi.Internal.PStream
     -- Tydi.Internal.PStreamRead

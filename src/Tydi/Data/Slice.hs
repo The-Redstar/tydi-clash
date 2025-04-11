@@ -5,7 +5,7 @@
 {-# LANGUAGE PatternSynonyms #-}
 
 
-module Tydi.Slice (
+module Tydi.Data.Slice (
   Slice,pattern Slice,
   slice,
   start,end,
@@ -27,10 +27,10 @@ import Clash.Explicit.Prelude hiding (
   traverse#,fold,foldr,ifoldr,
  )
 import qualified Clash.Sized.Vector as V
-import qualified Tydi.Prefix as P
-import           Tydi.Prefix (Zippable,VLength,Zipped,zip,zipWith)
-import qualified Tydi.Range as R
-import           Tydi.Range hiding (full,start,end,range)
+import qualified Tydi.Data.Prefix as P
+import           Tydi.Data.Prefix (Zippable,VLength,Zipped,zip,zipWith)
+import qualified Tydi.Data.Range as R
+import           Tydi.Data.Range hiding (full,start,end,range)
 import           Data.Foldable (foldr)
 
 -- closed interval, non-empty slice of a vector

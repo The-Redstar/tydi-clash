@@ -11,14 +11,14 @@
 
 module Tydi.PStream where
 --import Tydi.Internal.PStreamRead (getUser, Stai (getStaiExt), Data (getDataSliced), getStrbRaw, Strb (getStrbExtRaw))
-import Clash.Explicit.Prelude hiding (last,slice)
+import           Clash.Explicit.Prelude hiding (last,slice)
 import qualified Clash.Explicit.Prelude
-import Data.Type.Bool (If)
-import Tydi.Range (pattern Range)
-import Tydi.Slice (Slice,slice)
-import qualified Tydi.Slice as Slice
-import Tydi.Prefix (Prefix,prefix)
-import qualified Tydi.Prefix as Prefix
+import           Data.Type.Bool (If)
+import           Tydi.Data.Range (pattern Range)
+import           Tydi.Data.Slice (Slice,slice)
+import qualified Tydi.Data.Slice as Slice
+import           Tydi.Data.Prefix (Prefix,prefix)
+import qualified Tydi.Data.Prefix as Prefix
 import Data.Maybe (fromMaybe, isJust, fromJust)
 import Optics.Lens
 import Optics.Getter

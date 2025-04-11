@@ -1,7 +1,7 @@
 
 
 
-module Tydi.Label (type (>::)(..)) where
+module Tydi.Data.Label (type (>::)(..)) where
 
 import Clash.Explicit.Prelude
 import Data.Proxy

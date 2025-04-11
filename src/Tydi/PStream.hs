@@ -14,6 +14,7 @@ module Tydi.PStream where
 import Clash.Explicit.Prelude hiding (last,slice)
 import qualified Clash.Explicit.Prelude
 import Data.Type.Bool (If)
+import Tydi.Range (pattern Range)
 import Tydi.Slice (Slice,slice)
 import qualified Tydi.Slice as Slice
 import Tydi.Prefix (Prefix,prefix)
@@ -198,10 +199,10 @@ instance (HasStai c ~ False, HasMultiStrb c ~ False,n~n0+1) => DataFunc (PStream
   getDataSliced' PSTransfer{dat,endi,strb} = fromBool strb $ prefix endi dat
   getDataStrobed' PSTransfer{dat,endi,strb} = zipWith fromBool (maskRange 0 endi (repeat strb)) dat
 instance (HasStai c ~ True, HasMultiStrb c ~ False) => DataFunc (PStreamTransfer c n d u e) True False where
-  getDataSliced' PSTransfer{dat,stai,endi,strb} = fromBool strb $ slice stai endi dat
+  getDataSliced' PSTransfer{dat,stai,endi,strb} = fromBool strb $ slice (Range stai endi) dat
   getDataStrobed' PSTransfer{dat,stai,endi,strb} = zipWith fromBool (maskRange stai endi (repeat strb)) dat
 instance (HasStai c ~ True, HasMultiStrb c ~ True) => DataFunc (PStreamTransfer c n d u e) True True where
-  getDataSliced' PSTransfer{dat,stai,endi,strb} = slice stai endi $ zipWith fromBool strb dat
+  getDataSliced' PSTransfer{dat,stai,endi,strb} = slice (Range stai endi) $ zipWith fromBool strb dat
   getDataStrobed' PSTransfer{dat,stai,endi,strb} = zipWith fromBool (maskRange stai endi strb) dat
 
 
@@ -336,17 +337,17 @@ instance (CompleteComplexity' c n d u e, HasStai c ~ False, HasMultiStrb c ~ Fal
 instance (CompleteComplexity' c n d u e, HasStai c ~ True, HasMultiStrb c ~ False)
   => FromSlice (PStreamTransfer c n d u e) True False where -- Maybe Slice
   fromSlice' s last user = fromSignals dat last user stai endi strb
-    where dat  = maybe (repeat undefined) Slice.unsafeFromSlice s
+    where dat  = maybe (repeat undefined) Slice.unsafeToVec s
           stai = maybe 0        Slice.start s
           endi = maybe maxBound Slice.end   s
           strb = isJust s
 instance (CompleteComplexity' c n d u e, HasStai c ~ True, HasMultiStrb c ~ True)
   => FromSlice (PStreamTransfer c n d u e) True True where -- Slice Maybe
   fromSlice' s last user = fromSignals dat last user stai endi strb
-    where dat  = map fromJust $ Slice.unsafeFromSlice s
+    where dat  = map fromJust $ Slice.unsafeToVec s
           stai = Slice.start s
           endi = Slice.end   s
-          strb = map isJust $ Slice.unsafeFromSlice s
+          strb = map isJust $ Slice.unsafeToVec s
 
 fromSlice ::
     forall (c::Complexity) (n::Nat) (d::Nat) u e

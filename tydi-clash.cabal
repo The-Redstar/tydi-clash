@@ -93,6 +93,7 @@ library
     Tydi.Group
     Tydi.Union
     Tydi.Data
+    Tydi.Range
     Tydi.Prefix
     Tydi.Slice
     Tydi.PStream

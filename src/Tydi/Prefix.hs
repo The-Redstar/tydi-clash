@@ -4,6 +4,7 @@
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Move brackets to avoid $" #-}
+{-# LANGUAGE PatternSynonyms #-}
 
 module Tydi.Prefix where
 import Clash.Explicit.Prelude hiding (
@@ -24,7 +25,12 @@ import Data.Foldable (foldr)
 
 -- like Slice, but without a start index
 data Prefix n a where
-  Prefix :: (n~n0+1) => {end::Index n,vec::Vec n a} -> Prefix n a
+  Prefix' :: (n~n0+1) => {end::Index n,vec::Vec n a} -> Prefix n a
+
+pattern Prefix :: (KnownNat n,n~n0+1) => Index n -> Vec n a -> Prefix n a
+pattern Prefix end vec <- Prefix'{end,vec}  where
+  Prefix end vec = prefix end vec
+{-# COMPLETE Prefix #-}
 
 deriving instance (KnownNat n,Lift a) => Lift (Prefix n a)
 -- deriving instance Data (Prefix n a) -- TODO
@@ -32,16 +38,16 @@ deriving instance (KnownNat n,Lift a) => Lift (Prefix n a)
 deriving instance Bundle (Prefix n a)
 
 prefix :: (KnownNat n,n~n0+1) => Index n -> Vec n a -> Prefix n a
-prefix e v = Prefix{end=e,vec=V.zipWith (\i x -> if i<=e then x else errorX "Outside of prefix range") indicesI v}
+prefix e v = Prefix'{end=e,vec=V.zipWith (\i x -> if i<=e then x else errorX "Outside of prefix range") indicesI v}
 
 unsafeToVec :: Prefix n a -> Vec n a
-unsafeToVec Prefix{vec} = vec
+unsafeToVec Prefix'{vec} = vec
 
-toMaybes :: (KnownNat n) => Prefix n a -> Vec n (Maybe a)
-toMaybes Prefix{end,vec} = V.imap (\i x -> if i<=end then Just x else Nothing) vec
+strobed :: (KnownNat n) => Prefix n a -> Vec n (Maybe a)
+strobed Prefix'{end,vec} = V.imap (\i x -> if i<=end then Just x else Nothing) vec
 
 full :: (KnownNat n,n~n0+1) => Vec n a -> Prefix n a
-full v = Prefix{end=maxBound,vec=v}
+full v = Prefix'{end=maxBound,vec=v}
 
 -- (Lift, derived)
 
@@ -53,7 +59,7 @@ instance  (KnownNat n,n~n+1) => Applicative (Prefix n) where
   (<*>) = zipWith ($)
 
 instance (KnownNat n) => Foldable (Prefix n) where
-  foldr f z Prefix{end,vec} = foldr# f z 0 end vec
+  foldr f z Prefix'{end,vec} = foldr# f z 0 end vec
 
 foldr# :: (KnownNat m) => (a -> b -> b) -> b -> Index m -> Index m -> Vec n a -> b
 foldr# _ z _ _ Nil           = z -- should not be possible
@@ -61,7 +67,7 @@ foldr# f z i end (x `Cons` xs) | i<=end    = f x z
                                | otherwise = f x (foldr# f z (i+1) end xs)
 
 instance (KnownNat n) => Traversable (Prefix n) where --TODO: what is this supposed to do?
-  traverse f Prefix{end,vec} = prefix end <$> traverse# f 0 end vec
+  traverse f Prefix'{end,vec} = prefix end <$> traverse# f 0 end vec
 
 {-# CLASH_OPAQUE traverse# #-}
 -- {-# ANN traverse# hasBlackBox #-}
@@ -70,7 +76,7 @@ traverse# _ _ _ Nil           = pure Nil
 traverse# f i end (x `Cons` xs) = if i<=end then Cons <$> f x <*> traverse# f (i+1) end xs else pure $ repeat undefined
 
 instance (KnownNat n, Eq a) => Eq (Prefix n a) where
-  (==) p@Prefix{} q@Prefix{} = and (zipWith (==) p q)
+  (==) p@Prefix'{} q@Prefix'{} = and (zipWith (==) p q)
 
 instance (KnownNat n, Ord a) => Ord (Prefix n a) where
   compare x y = foldr f EQ $ zipWith compare x y
@@ -84,7 +90,7 @@ instance (KnownNat n, Ord a) => Ord (Prefix n a) where
 
 instance (KnownNat n,Show a) => Show (Prefix n a) where
   showsPrec n = \case
-    Prefix{end,vec=vs} -> showParen (n > 5) (go 0 end vs)
+    Prefix'{end,vec=vs} -> showParen (n > 5) (go 0 end vs)
 
    where
     go ::  (KnownNat n) => Index n -> Index n -> Vec m a -> ShowS
@@ -137,27 +143,27 @@ instance  (KnownNat n,n~n0+1,Monoid a) => Monoid (Prefix n a) where
 
 
 maxLength :: KnownNat n => Prefix n a -> Int
-maxLength Prefix{vec} = length vec
+maxLength Prefix'{vec} = length vec
 maxLengthS :: KnownNat n => Prefix n a -> SNat n
-maxLengthS Prefix{vec} = lengthS vec
+maxLengthS Prefix'{vec} = lengthS vec
 
 (!!) :: (KnownNat n, Enum i) => Prefix n a -> i -> a
-Prefix{end,vec} !! i = if fromIntegral (fromEnum i) <= end then vec V.!! i else undefined
+Prefix'{end,vec} !! i = if fromIntegral (fromEnum i) <= end then vec V.!! i else errorX "Index out of prefix range"
 {-# INLINE (!!) #-}
 
 (!!?) :: (KnownNat n, Enum i) => Prefix n a -> i -> Maybe a
-Prefix{end,vec} !!? i = if i' <= end then Just $ vec V.!! i else Nothing
+Prefix'{end,vec} !!? i = if i' <= end then Just $ vec V.!! i else Nothing
   where i' = fromIntegral $ fromEnum i
 {-# INLINE (!!?) #-}
 
 head :: Prefix (n + 1) a -> a
-head Prefix{vec} = V.head vec
+head Prefix'{vec} = V.head vec
 
 last :: KnownNat n => Prefix n a -> a
-last Prefix{end,vec} = vec V.!! end
+last Prefix'{end,vec} = vec V.!! end
 
 at :: forall (n :: Natural) (m :: Natural) (m0 :: Natural) a. (KnownNat m,n+1<=m,n+1+m0~m) => SNat n -> Prefix m a -> Maybe a
-at n Prefix{end,vec} = if fromSNat n <= end then Just $ V.at n vec else Nothing
+at n Prefix'{end,vec} = if fromSNat n <= end then Just $ V.at n vec else Nothing
 
 -- indices :: t -> Prefix n (Index n)
 -- indices n = full $ V.indices n
@@ -187,7 +193,7 @@ elemIndex x = findIndex (x ==)
 
 --subslice / subprefix
 subPrefix :: KnownNat n => Index n -> Prefix n a -> Prefix n a
-subPrefix e Prefix{end,vec} = prefix (min e end) vec
+subPrefix e Prefix'{end,vec} = prefix (min e end) vec
 
 --toSlice -- defined in Slice
 --toPrefix = ???
@@ -203,13 +209,13 @@ subPrefix e Prefix{end,vec} = prefix (min e end) vec
 -- resize = ???
 
 shiftIn :: KnownNat n => Prefix n a -> a -> Prefix n a
-shiftIn Prefix{end,vec} x = Prefix{end,vec=x +>> vec}
+shiftIn Prefix'{end,vec} x = Prefix'{end,vec=x +>> vec}
 prepend ::  (KnownNat n) => Prefix n a -> a -> Prefix (n+1) a
-prepend Prefix{end,vec} x = Prefix{end=end',vec=x:>vec} --prefix only
+prepend Prefix'{end,vec} x = Prefix'{end=end',vec=x:>vec} --prefix only
   where end' = (unpack $ resize $ pack end) + 1
 
 replace :: (KnownNat n, Enum i) => i -> a -> Prefix n a -> Prefix n a
-replace i y p@Prefix{end,vec} = if fromIntegral (fromEnum i)<=end then Prefix{end,vec=V.replace i y vec} else p
+replace i y p@Prefix'{end,vec} = if fromIntegral (fromEnum i)<=end then Prefix'{end,vec=V.replace i y vec} else p
 
 --reverse = --slice only
 
@@ -217,7 +223,7 @@ replace i y p@Prefix{end,vec} = if fromIntegral (fromEnum i)<=end then Prefix{en
 -- shiftRight = ??? -- slice only?
 
 map :: (KnownNat n) => (a -> b) -> Prefix n a -> Prefix n b
-map f Prefix{end,vec} = prefix end $ fmap f vec
+map f Prefix'{end,vec} = prefix end $ fmap f vec
 -- imap = ??? --TODO
 -- smap = ??? --TODO
 
@@ -235,13 +241,13 @@ instance Zippable (Vec n a) (Vec n b) where
   zip = V.zip
 instance (KnownNat n) => Zippable (Prefix n a) (Vec n b) where
   type Zipped (Prefix n a) (Vec n b) = Prefix n (a,b)
-  zip Prefix{end,vec} v = prefix end $ V.zip vec v
+  zip Prefix'{end,vec} v = prefix end $ V.zip vec v
 instance (KnownNat n) => Zippable (Vec n a) (Prefix n b) where
   type Zipped (Vec n a) (Prefix n b) = Prefix n (a,b)
-  zip v Prefix{end,vec} = prefix end $ V.zip v vec
+  zip v Prefix'{end,vec} = prefix end $ V.zip v vec
 instance (KnownNat n) => Zippable (Prefix n a) (Prefix n b) where
   type Zipped (Prefix n a) (Prefix n b) = Prefix n (a,b)
-  zip Prefix{end,vec} Prefix{end=end',vec=vec'} = prefix (min end end') $ V.zip vec vec'
+  zip Prefix'{end,vec} Prefix'{end=end',vec=vec'} = prefix (min end end') $ V.zip vec vec'
 
 zip3 :: (Zipped (Zipped a1 b1) b2 ~ f ((a2, b3), c), Functor f,  Zippable a1 b1, Zippable (Zipped a1 b1) b2) => a1 -> b1 -> b2 -> f (a2, b3, c)
 zip3 a b = zipWith (\(p,q)         r -> (p,q,r))         (zip  a b)
@@ -284,22 +290,22 @@ izipWith :: (Zipped    (Vec (VLength (Zipped a b)) (Index (VLength (Zipped a b))
 izipWith f as bs = zipWith (\i (a,b) -> f i a b) V.indicesI (zip as bs)
 
 unzip  :: Prefix n (a,b) -> (Prefix n a, Prefix n b)
-unzip  Prefix{end,vec} = (Prefix{end,vec=a},Prefix{end,vec=b})
+unzip  Prefix'{end,vec} = (Prefix'{end,vec=a},Prefix'{end,vec=b})
   where (a,b) = V.unzip vec
 unzip3 :: Prefix n (a,b,c) -> (Prefix n a, Prefix n b, Prefix n c)
-unzip3 Prefix{end,vec} = (Prefix{end,vec=a},Prefix{end,vec=b},Prefix{end,vec=c})
+unzip3 Prefix'{end,vec} = (Prefix'{end,vec=a},Prefix'{end,vec=b},Prefix'{end,vec=c})
   where (a,b,c) = V.unzip3 vec
 unzip4 :: Prefix n (a,b,c,d) -> (Prefix n a, Prefix n b, Prefix n c, Prefix n d)
-unzip4 Prefix{end,vec} = (Prefix{end,vec=a},Prefix{end,vec=b},Prefix{end,vec=c},Prefix{end,vec=d})
+unzip4 Prefix'{end,vec} = (Prefix'{end,vec=a},Prefix'{end,vec=b},Prefix'{end,vec=c},Prefix'{end,vec=d})
   where (a,b,c,d) = V.unzip4 vec
 unzip5 :: Prefix n (a,b,c,d,e) -> (Prefix n a, Prefix n b, Prefix n c, Prefix n d, Prefix n e)
-unzip5 Prefix{end,vec} = (Prefix{end,vec=a},Prefix{end,vec=b},Prefix{end,vec=c},Prefix{end,vec=d},Prefix{end,vec=e})
+unzip5 Prefix'{end,vec} = (Prefix'{end,vec=a},Prefix'{end,vec=b},Prefix'{end,vec=c},Prefix'{end,vec=d},Prefix'{end,vec=e})
   where (a,b,c,d,e) = V.unzip5 vec
 unzip6 :: Prefix n (a,b,c,d,e,f) -> (Prefix n a, Prefix n b, Prefix n c, Prefix n d, Prefix n e, Prefix n f)
-unzip6 Prefix{end,vec} = (Prefix{end,vec=a},Prefix{end,vec=b},Prefix{end,vec=c},Prefix{end,vec=d},Prefix{end,vec=e},Prefix{end,vec=f})
+unzip6 Prefix'{end,vec} = (Prefix'{end,vec=a},Prefix'{end,vec=b},Prefix'{end,vec=c},Prefix'{end,vec=d},Prefix'{end,vec=e},Prefix'{end,vec=f})
   where (a,b,c,d,e,f) = V.unzip6 vec
 unzip7 :: Prefix n (a,b,c,d,e,f,g) -> (Prefix n a, Prefix n b, Prefix n c, Prefix n d, Prefix n e, Prefix n f, Prefix n g)
-unzip7 Prefix{end,vec} = (Prefix{end,vec=a},Prefix{end,vec=b},Prefix{end,vec=c},Prefix{end,vec=d},Prefix{end,vec=e},Prefix{end,vec=f},Prefix{end,vec=g})
+unzip7 Prefix'{end,vec} = (Prefix'{end,vec=a},Prefix'{end,vec=b},Prefix'{end,vec=c},Prefix'{end,vec=d},Prefix'{end,vec=e},Prefix'{end,vec=f},Prefix'{end,vec=g})
   where (a,b,c,d,e,f,g) = V.unzip7 vec
 
 
@@ -315,6 +321,8 @@ unzip7 Prefix{end,vec} = (Prefix{end,vec=a},Prefix{end,vec=b},Prefix{end,vec=c},
 -- forceV = ???
 -- forceVX = ???
 
+-- autoReg
+-- TODO
 
 -- SHOCKWAVES
 -- TODO

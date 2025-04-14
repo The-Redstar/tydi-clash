@@ -7,10 +7,20 @@
 
 module Tydi.Data.Slice (
   Slice,pattern Slice,
-  slice,
+  slice,full,
   start,end,
-  strobed,unsafeToVec,
-  Zippable(..)
+  strobed,unsafeToVec,toSlice,
+  Zippable(..),
+  maxLength,maxLengthS,
+  (!!),(!!?),
+  head,last,at,
+  findIndex,elemIndex,
+  ifoldr,
+  subSlice,
+  shiftIn,replace,
+  map,P.zipWith,P.izipWith,
+  P.zip3,P.zip4,P.zip5,P.zip6,P.zip7,
+  unzip,unzip3,unzip4,unzip5,unzip6,unzip7,
  ) where
 
 import Clash.Explicit.Prelude hiding (
@@ -25,10 +35,11 @@ import Clash.Explicit.Prelude hiding (
   map,
   findIndex,elemIndex,
   traverse#,fold,foldr,ifoldr,
+  replace,
  )
 import qualified Clash.Sized.Vector as V
 import qualified Tydi.Data.Prefix as P
-import           Tydi.Data.Prefix (Zippable,VLength,Zipped,zip,zipWith)
+import           Tydi.Data.Prefix (Zippable,Zipped,zip,zipWith)
 import qualified Tydi.Data.Range as R
 import           Tydi.Data.Range hiding (full,start,end,range)
 import           Data.Foldable (foldr)
@@ -128,6 +139,7 @@ foldr# f z i r@(Range s e) (x `Cons` xs) | i<s       = foldr# f z (i+1) r xs
                                          | otherwise = f x (foldr# f z (i+1) r xs)
 
 instance (KnownNat n) => Traversable (Slice n) where --TODO: what is this supposed to do?
+  traverse :: (KnownNat n, Applicative f) => (a -> f b) -> Slice n a -> f (Slice n b)
   traverse f Slice'{range=range@(Range s e),vec} = slice range <$> traverse# f 0 s e vec
 
 {-# CLASH_OPAQUE traverse# #-}
@@ -236,7 +248,7 @@ elemIndex x = findIndex (x ==)
 
 --subslice / subprefix
 subSlice :: KnownNat n => Range n -> Slice n a -> Slice n a -- not safe! range may be empty!
-subSlice (Range s e) Slice'{range=Range start end,vec} = slice (Range (max s start) (min e end)) vec
+subSlice (Range s e) Slice'{range=Range s' e',vec} = slice (Range (max s s') (min e e')) vec
 
 --toSlice -- defined in Slice
 --toPrefix = ???
@@ -252,13 +264,13 @@ subSlice (Range s e) Slice'{range=Range start end,vec} = slice (Range (max s sta
 -- resize = ???
 
 shiftIn :: KnownNat n => Slice n a -> a -> Slice n a
-shiftIn Slice'{range=range@(Range start end),vec} x = Slice'{range,vec=V.replace start x (undefined +>> vec)}
+shiftIn Slice'{range=range@(Range s _),vec} x = Slice'{range,vec=V.replace s x (undefined +>> vec)}
 -- prepend ::  (KnownNat n) => Slice n a -> a -> Slice (n+1) a
 -- prepend Prefix{end,vec} x = Prefix{end=end',vec=x:>vec} --prefix only
 --   where end' = (unpack $ resize $ pack end) + 1
 
 replace :: (KnownNat n, Enum i) => i -> a -> Slice n a -> Slice n a
-replace i y p@Slice'{range,vec} = Slice'{range,vec=V.replace i y' vec}
+replace i y Slice'{range,vec} = Slice'{range,vec=V.replace i y' vec}
   where y' = if R.contains range $ fromIntegral (fromEnum i) then y else undefined
 
 --reverse = --slice only
@@ -295,19 +307,19 @@ instance (KnownNat n) => Zippable (Vec n a) (Slice n b) where
   zip v Slice'{range,vec} = slice range $ V.zip v vec
 
 
-uncurry3 :: (t1 -> t2 -> t3 -> t4) -> (t1, t2, t3) -> t4
-uncurry3 f' (a,b,c)         = f' a b c
-uncurry4 :: (t1 -> t2 -> t3 -> t4 -> t5) -> (t1, t2, t3, t4) -> t5
-uncurry4 f' (a,b,c,d)       = f' a b c d
-uncurry5 :: (t1 -> t2 -> t3 -> t4 -> t5 -> t6) -> (t1, t2, t3, t4, t5) -> t6
-uncurry5 f' (a,b,c,d,e)     = f' a b c d e
-uncurry6 :: (t1 -> t2 -> t3 -> t4 -> t5 -> t6 -> t7) -> (t1, t2, t3, t4, t5, t6) -> t7
-uncurry6 f' (a,b,c,d,e,f)   = f' a b c d e f
-uncurry7 :: (t1 -> t2 -> t3 -> t4 -> t5 -> t6 -> t7 -> t8) -> (t1, t2, t3, t4, t5, t6, t7) -> t8
-uncurry7 f' (a,b,c,d,e,f,g) = f' a b c d e f g
+-- uncurry3 :: (t1 -> t2 -> t3 -> t4) -> (t1, t2, t3) -> t4
+-- uncurry3 f' (a,b,c)         = f' a b c
+-- uncurry4 :: (t1 -> t2 -> t3 -> t4 -> t5) -> (t1, t2, t3, t4) -> t5
+-- uncurry4 f' (a,b,c,d)       = f' a b c d
+-- uncurry5 :: (t1 -> t2 -> t3 -> t4 -> t5 -> t6) -> (t1, t2, t3, t4, t5) -> t6
+-- uncurry5 f' (a,b,c,d,e)     = f' a b c d e
+-- uncurry6 :: (t1 -> t2 -> t3 -> t4 -> t5 -> t6 -> t7) -> (t1, t2, t3, t4, t5, t6) -> t7
+-- uncurry6 f' (a,b,c,d,e,f)   = f' a b c d e f
+-- uncurry7 :: (t1 -> t2 -> t3 -> t4 -> t5 -> t6 -> t7 -> t8) -> (t1, t2, t3, t4, t5, t6, t7) -> t8
+-- uncurry7 f' (a,b,c,d,e,f,g) = f' a b c d e f g
 
-izipWith :: (Zipped    (Vec (VLength (Zipped a b)) (Index (VLength (Zipped a b))))    (Zipped a b)  ~ f (t1, (t2, t3)),  Functor f, KnownNat (VLength (Zipped a b)), Zippable a b,  Zippable    (Vec (VLength (Zipped a b)) (Index (VLength (Zipped a b))))    (Zipped a b)) => (t1 -> t2 -> t3 -> b3) -> a -> b -> f b3
-izipWith f as bs = zipWith (\i (a,b) -> f i a b) V.indicesI (zip as bs)
+-- izipWith :: (Zipped    (Vec (VLength (Zipped a b)) (Index (VLength (Zipped a b))))    (Zipped a b)  ~ f (t1, (t2, t3)),  Functor f, KnownNat (VLength (Zipped a b)), Zippable a b,  Zippable    (Vec (VLength (Zipped a b)) (Index (VLength (Zipped a b))))    (Zipped a b)) => (t1 -> t2 -> t3 -> b3) -> a -> b -> f b3
+-- izipWith f as bs = zipWith (\i (a,b) -> f i a b) V.indicesI (zip as bs)
 
 unzip  :: Slice n (a,b) -> (Slice n a, Slice n b)
 unzip  Slice'{range,vec} = (Slice'{range,vec=a},Slice'{range,vec=b})

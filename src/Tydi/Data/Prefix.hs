@@ -6,7 +6,24 @@
 {-# HLINT ignore "Move brackets to avoid $" #-}
 {-# LANGUAGE PatternSynonyms #-}
 
-module Tydi.Data.Prefix where
+module Tydi.Data.Prefix (
+  Prefix,pattern Prefix,
+  prefix,full,
+  end,
+  strobed,unsafeToVec,
+  Zippable(..),VLength,
+  maxLength,maxLengthS,
+  (!!),(!!?),
+  head,last,at,
+  findIndex,elemIndex,
+  ifoldr,
+  subPrefix,
+  shiftIn,prepend,replace,
+  map,zipWith,izipWith,
+  zip3,zip4,zip5,zip6,zip7,
+  zipWith3,zipWith4,zipWith5,zipWith6,zipWith7,
+  unzip,unzip3,unzip4,unzip5,unzip6,unzip7,
+) where
 import Clash.Explicit.Prelude hiding (
   (!!),at,
   head,last,
@@ -15,7 +32,7 @@ import Clash.Explicit.Prelude hiding (
   zipWith,zipWith3,zipWith4,zipWith5,zipWith6,zipWith7,
   izipWith,
   indices,
-  map,
+  map,replace,
   findIndex,elemIndex,
   traverse#,fold,foldr,ifoldr,
  )

@@ -93,12 +93,14 @@ library
     Tydi.Data.Label
     Tydi.Data.Group
     Tydi.Data.Union
+    Tydi.Internal.Data.Union
     Tydi.Data.Range
     Tydi.Data.Prefix
     Tydi.Data.Slice
     Tydi.PStream
     Tydi.LStream
     Tydi.Synthesis
+    Tydi.Convert
     Tydi.Connect
     -- Tydi.Internal.PStream
     -- Tydi.Internal.PStreamRead

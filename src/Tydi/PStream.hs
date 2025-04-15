@@ -13,6 +13,7 @@ module Tydi.PStream where
 --import Tydi.Internal.PStreamRead (getUser, Stai (getStaiExt), Data (getDataSliced), getStrbRaw, Strb (getStrbExtRaw))
 import           Clash.Explicit.Prelude hiding (last,slice)
 import qualified Clash.Explicit.Prelude
+import qualified Clash.Sized.Vector as V
 import           Data.Type.Bool (If)
 import           Tydi.Data.Range (pattern Range)
 import           Tydi.Data.Slice (Slice,slice)
@@ -264,14 +265,17 @@ class StrbDep p b where
   getStrb' :: p -> StrbType p
   getStrbExtRaw' :: p -> Vec (Lanes p) Bool
   mkStrb :: StrbType p -> Vec (Lanes p) Bool -> StrbType p
-instance (HasMultiStrb c ~ False) => StrbDep (PStreamTransfer c n d u e) False where
+  mkStrb' :: Vec (Lanes p) Bool -> StrbType p
+instance (HasMultiStrb c ~ False, n~n0+1) => StrbDep (PStreamTransfer c n d u e) False where
   getStrb' = getStrbRaw
   getStrbExtRaw' PSTransfer{strb} = repeat strb
   mkStrb raw _ext = raw
+  mkStrb' ext = V.last ext
 instance (HasMultiStrb c ~ True) => StrbDep (PStreamTransfer c n d u e) True where
   getStrb' = getStrbExt
   getStrbExtRaw' = getStrbRaw
   mkStrb _raw ext = ext
+  mkStrb' ext = ext
 
 getStrb :: PStreamTransfer c n d u e -> StrbType (PStreamTransfer c n d u e)
 getStrb (p@PSTransfer{}::PStreamTransfer c n d u e) = getStrb' @(PStreamTransfer c n d u e) @(HasMultiStrb c) p
@@ -463,6 +467,9 @@ instance
           disp (Just x) = show x
           disp Nothing = "-"
 
+
+-- functor over data type
+-- TODO
 
 -- OPTICS
 

@@ -461,7 +461,7 @@ instance
   , Show (StaiType' c n)
   )
   => Show (PStreamTransfer c n d u e) where
-  show p@PSTransfer{} = "PStreamTransfer" <> dats <> show (getLast p) <> show (getUser p)
+  show p@PSTransfer{} = "PStreamTransfer " <> dats <> " " <> show (getLast p) <> " " <> show (getUser p)
     where dats = "[" <> strobeds <> "][" <> show (getStai p) <> " ..= " <> show (getEndi p) <> "]"
           strobeds = foldl1 (\a b -> a <> "," <> b) $ map disp $ getDataStrobed p
           disp (Just x) = show x

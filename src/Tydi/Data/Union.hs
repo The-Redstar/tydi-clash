@@ -8,4 +8,4 @@ module Tydi.Data.Union (
 ) where
 
 import Tydi.Internal.Data.Union
-import qualified Tydi.Data.Label
+import Tydi.Data.Label

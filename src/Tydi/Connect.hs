@@ -1,5 +1,6 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 
 module Tydi.Connect where
@@ -14,28 +15,28 @@ import Tydi.Convert (TydiConvertible(..))
 class Connect p q where
   connect :: p -> q
 
--- instance (
---     CompleteComplexity' c n d u e
---   , CompleteComplexity' c' n d u' e'
---   , TydiConvertible e e'
---   , TydiConvertible u u'
---   , c<=c'
---   ) => Connect (PStream c n d u e) (PStream c' n d u' e') where
---   connect = tfmap connect
--- instance (
---     CompleteComplexity' c' n d u' e'
---   , TydiConvertible e e'
---   , TydiConvertible u u'
---   , c<=c'
---   ) => Connect (PStreamTransfer c n d u e) (PStreamTransfer c' n d u' e') where
---   connect p@PSTransfer{dat,user,endi} = convert <$> PSTransfer{
---     dat =convert <$> dat,
---     user=convert user,
---     last=mkLast $ getLastExt p,
---     strb=mkStrb' $ getStrbExtRaw p,
---     stai=mkStai $ getStaiExt p,
---     endi=endi
---    }
+instance (
+    CompleteComplexity' (C c)  n d u  e
+  , CompleteComplexity' (C c') n d u' e'
+  , TydiConvertible e e'
+  , TydiConvertible u u'
+  , c<=c'
+  ) => Connect (PStream (C c) n d u e) (PStream (C c') n d u' e') where
+  connect = tfmap connect
+instance (
+    CompleteComplexity' (C c') n d u' e'
+  , TydiConvertible e e'
+  , TydiConvertible u u'
+  , c<=c'
+  ) => Connect (PStreamTransfer (C c) n d u e) (PStreamTransfer (C c') n d u' e') where
+  connect p@PSTransfer{dat,user,endi} = PSTransfer{
+    dat =convert <$> dat,
+    user=convert user,
+    last=mkLast  @(PStreamTransfer (C c') n d u' e') @(HasMultiLast (C c')) $ getLastExt p,
+    strb=mkStrb' @(PStreamTransfer (C c') n d u' e') @(HasMultiStrb (C c')) $ getStrbExtRaw p,
+    stai=mkStai  @(PStreamTransfer (C c') n d u' e') @(HasStai (C c')) $ getStaiExt p,
+    endi=endi
+   }
 
 instance (TydiConvertible e' e, TydiConvertible u' u, c'<=c) => Connect (PStreamReady c n d u e) (PStreamReady c' n d u' e') where
   connect NotReady = NotReady

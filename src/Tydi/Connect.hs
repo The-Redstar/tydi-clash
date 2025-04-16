@@ -38,7 +38,7 @@ instance (
     endi=endi
    }
 
-instance (TydiConvertible e' e, TydiConvertible u' u, c'<=c) => Connect (PStreamReady c n d u e) (PStreamReady c' n d u' e') where
+instance (TydiConvertible e' e, TydiConvertible u' u, c'<=c) => Connect (PStreamReady (C c) n d u e) (PStreamReady (C c') n d u' e') where
   connect NotReady = NotReady
   connect Ready = Ready
 

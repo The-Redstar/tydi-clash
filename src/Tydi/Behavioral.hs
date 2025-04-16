@@ -10,6 +10,7 @@ import Tydi.PStream
 import Tydi.Synthesis (Reverse)
 import Data.Proxy (Proxy(..))
 
+
 {-
 
 general:
@@ -175,3 +176,88 @@ checkBehav pstream ready = unbundle $ mealy go init' (bundle (pstream,ready))
       --           else
       --             (p,r)
       --       err = errorX "Stream value changed after setting valid"
+
+
+-- test behaviour of LAST
+checkLast :: forall c n d u e dom
+  . ( CompleteComplexity' c n d u e
+    , Eq (PStream c n d u e)
+    , NFDataX (PStream c n d u e)
+    , HiddenClockResetEnable dom
+  ) => Signal dom (PStream c n d u e) -> Signal dom (PStreamReady c n d u e) -> (Signal dom (PStream c n d u e), Signal dom (PStreamReady c n d u e))
+checkLast pstream ready = unbundle $ mealy go init' (bundle (pstream,ready))
+  where
+    init' :: Vec d Bool
+    init' = repeat False
+    go activeDims (p,r) = (nextActiveDims,o)
+     where
+      -- p' = connect @(PStream c n d u e) @(PStream (C 8) n d u e) p
+      -- r' = connect @(PStreamReady c n d u e) @(PStreamReady (C 8) n d u e) r
+      o = if anyErr then errorX "Last bit set before terminating inner sequence" else (p,r)
+
+      activityCell (active,lastbit) (pactive,activate,_) = (active',activate',err)
+        where activate' = activate || lastbit -- activate outer sequence if stuff happens here or inside
+              active'   = (active || activate) && not lastbit -- active if previously active, inner data has been started
+              err       = pactive && lastbit -- error if terminating while parent is active
+
+      processColumn active dataPresent lastbits = (active', or err)
+        where (active',_,err) = unzip3 $ postscanr activityCell (False,dataPresent,undefined) $ zip active lastbits
+
+      processColumn' (active,err) (dataPresent,lastbits) = (active', err || err')
+        where (active',err') = processColumn active dataPresent lastbits
+
+      (activeDims',anyErr) = case p of
+        Transfer tf -> foldl processColumn' (activeDims,False) (zip (getStrbExt tf) (getLastExt tf))
+        _ -> (activeDims,False)
+
+      nextActiveDims = case (p,r) of
+        (Transfer _, Ready) -> activeDims'
+        _ -> activeDims
+
+
+
+{-
+
+state: whether a data level is active
+when data is sent, all levels become active
+when last is set, all levels below (outer) become active, and the current level becomes inactive
+a last is not allowed to be set while the next level is still active
+
+
+        False dataPresent # initial
+    pactive | | activate
+            v v
+           +---+
+active  -->|   |--> active'
+lastbit -->|   |--> err
+           +---+
+            | |
+   pactive' v v activate'
+
+
+activate' = activate || lastbit
+active'   = (active || activate) && !lastbit
+err       = pactive && lastbit
+pactive'  = active'
+
+change active only on transfer
+
+     last data------\
+       |   |        |
+    A  +---+----\   |
+    |  v   |    v   |
+    |  L   |    L   |
+D   |  |   v    |   v
+^   +--+->[`]---+->[`]-----\
+!   |  +->[_]-\ +->[_]-\   |
+!   |  |   v  | |   v  |   |
+    \--+->[`]-+-+->[`]-+---+
+       \->[_]-+ \->[_]-+   |
+              |        |   \->A'
+              v        v
+              E        E
+              \--------+--->E
+
+  ----> N
+
+-}

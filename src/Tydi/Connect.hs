@@ -43,3 +43,4 @@ instance (TydiConvertible e' e, TydiConvertible u' u, c'<=c) => Connect (PStream
   connect Ready = Ready
 
 
+-- TODO add connect for entire bundles

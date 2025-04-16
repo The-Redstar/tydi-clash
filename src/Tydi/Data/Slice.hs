@@ -49,6 +49,7 @@ import           Data.Foldable (foldr)
 data Slice n a where
   Slice' :: {range::Range n,vec::Vec n a} -> Slice n a
 
+
 pattern Slice :: (KnownNat n,n~n0+1) => Range n -> Vec n a -> Slice n a
 pattern Slice range vec <- Slice'{range,vec}  where
   Slice range vec = slice range vec
@@ -170,6 +171,14 @@ instance (KnownNat n,Semigroup a) => Semigroup (Slice n a) where
 
 instance  (KnownNat n,n~n0+1,Monoid a) => Monoid (Slice n a) where
   mempty = full $ repeat mempty
+
+
+-- instance NFDataX
+instance (NFDataX a, KnownNat n, n~n0+1) => NFDataX (Slice n a) where
+  deepErrorX s = Slice'{range=Range (errorX s) (errorX s),vec=repeat $ errorX s}
+  hasUndefined p = hasUndefined $ strobed p
+  ensureSpine p = either deepErrorX id $ isX p
+  rnfX p = rnfX $ strobed p
 
 -- Arbitrary? --TODO?
 -- COarbitrary?

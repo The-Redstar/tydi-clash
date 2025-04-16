@@ -11,7 +11,7 @@
 
 module Tydi.PStream where
 --import Tydi.Internal.PStreamRead (getUser, Stai (getStaiExt), Data (getDataSliced), getStrbRaw, Strb (getStrbExtRaw))
-import           Clash.Explicit.Prelude hiding (last,slice)
+import           Clash.Prelude hiding (last,slice)
 import qualified Clash.Explicit.Prelude
 import qualified Clash.Sized.Vector as V
 import           Data.Type.Bool (If)
@@ -87,11 +87,14 @@ instance
       ) => CompleteComplexity' c n d u e
 
 
-data PStreamReady c n d u e = Ready | NotReady deriving (Show,Generic,BitPack)
+data PStreamReady c n d u e = Ready | NotReady deriving (Show,Generic,BitPack,Eq,NFDataX)
 
 class (CompleteComplexity' (ComplexityLevel a) (Lanes a) (Dims a) (UserType a) (DataType a)) => CompleteComplexity a
 instance (CompleteComplexity' c n d u e) => CompleteComplexity (PStreamTransfer c n d u e)
 instance (CompleteComplexity' c n d u e) => CompleteComplexity (PStream c n d u e)
+
+
+
 
 -- patterns for making PStream behave like a Maybe
 pattern Transfer :: PStreamTransfer c n d u e -> PStream c n d u e
@@ -356,7 +359,7 @@ instance (CompleteComplexity' c n d u e, HasStai c ~ True, HasMultiStrb c ~ True
 fromSlice ::
     forall (c::Complexity) (n::Nat) (d::Nat) u e
   .  (FromSlice (PStreamTransfer c n d u e) (HasStai c) (HasMultiStrb c))
-  => SliceStrbType' c n e -> LastType' c n d -> u-> PStreamTransfer c n d u e
+  => SliceStrbType' c n e -> LastType' c n d -> u -> PStreamTransfer c n d u e
 fromSlice = fromSlice' @(PStreamTransfer c n d u e) @(HasStai c) @(HasMultiStrb c)
 
 -- SEAL
@@ -466,6 +469,42 @@ instance
           strobeds = foldl1 (\a b -> a <> "," <> b) $ map disp $ getDataStrobed p
           disp (Just x) = show x
           disp Nothing = "-"
+
+
+instance (CompleteComplexity' c n d u e, NFDataX (PStreamTransfer c n d u e)) => NFDataX (PStream c n d u e) where
+  deepErrorX s = PStream{
+    valid = errorX s,
+    dat  = errorX s,
+    user = errorX s,
+    last = mkLast @(PStreamTransfer c n d u e) @(HasMultiLast c) (repeat $ repeat $ errorX s),
+    stai = mkStai @(PStreamTransfer c n d u e) @(HasStai c) (errorX s),
+    endi = errorX s,
+    strb = mkStrb' @(PStreamTransfer c n d u e) @(HasMultiStrb c) (repeat $ errorX s)
+  }
+  hasUndefined p = hasUndefined $ getTransfer p
+  ensureSpine p = either deepErrorX id $ isX p
+  rnfX p = rnfX $ getTransfer p
+
+instance (
+    CompleteComplexity' c n d u e
+  , NFDataX (PStreamTransfer c n d u e)
+  , NFDataX (LastType' c n d)
+  , NFDataX u
+  , NFDataX (SliceStrbType' c n e)
+  ) => NFDataX (PStreamTransfer c n d u e) where
+  deepErrorX s = PSTransfer{
+    dat  = errorX s,
+    user = errorX s,
+    last = mkLast @(PStreamTransfer c n d u e) @(HasMultiLast c) (repeat $ repeat $ errorX s),
+    stai = mkStai @(PStreamTransfer c n d u e) @(HasStai c) (errorX s),
+    endi = errorX s,
+    strb = mkStrb' @(PStreamTransfer c n d u e) @(HasMultiStrb c) (repeat $ errorX s)
+  }
+  hasUndefined p = hasUndefined (getDataSliced p) || hasUndefined (getLast p) || hasUndefined (getUser p)
+  ensureSpine = undefined -- TODO!!!
+  rnfX p = (rnfX $ getDataSliced p) `seq` (rnfX $ getLast p) `seq` (rnfX $ getUser p)
+
+
 
 
 -- functor over data type

@@ -132,8 +132,17 @@ instance (KnownNat n,Show a) => Show (Prefix n a) where
 instance (KnownNat n,Semigroup a) => Semigroup (Prefix n a) where
   (<>) = zipWith (<>)
 
-instance  (KnownNat n,n~n0+1,Monoid a) => Monoid (Prefix n a) where
+instance (KnownNat n,n~n0+1,Monoid a) => Monoid (Prefix n a) where
   mempty = full $ repeat mempty
+
+
+-- instance NFDataX
+instance (NFDataX a, KnownNat n, n~n0+1) => NFDataX (Prefix n a) where
+  deepErrorX s = Prefix'{end=errorX s,vec=repeat $ errorX s}
+  hasUndefined p = hasUndefined $ strobed p
+  ensureSpine p = either deepErrorX id $ isX p
+  rnfX p = rnfX $ strobed p
+
 
 -- Arbitrary? --TODO?
 -- COarbitrary?

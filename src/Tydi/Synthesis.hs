@@ -14,7 +14,6 @@ import Optics.Core
 
 
 -- synthesis
--- TODO
 type Synth x = Synth' (C 0) 1 0 x
 
 type family Synth' (c::Complexity) (t::Nat) (dim::Nat) x where
@@ -45,12 +44,6 @@ type family Reverse x where
   Reverse (Group a) = Group (Reverse a)
 
   Reverse () = ()
-
-  -- TODO
-
--- type family ReverseDir x where
---   ReverseDir 'Forward = 'Reverse
---   ReverseDir 'Reverse = 'Forward
 
 type family SyncDim sm dprev dcur where
   SyncDim Sync       prev cur = prev + cur
@@ -86,3 +79,5 @@ instance (Bundle h) => Bundle (StreamNode p h) where
   type Unbundled dom (StreamNode p h) = (StreamNode (Signal dom p) (Unbundled dom h))
   bundle (StreamNode ps hs) = StreamNode <$> ps <*> bundle hs
   unbundle nodes = StreamNode ((^. getting _stream) <$> nodes) $ unbundle ((^. getting _child) <$> nodes)
+
+-- TODO: flatten? make thigns more liek the Tydi specification

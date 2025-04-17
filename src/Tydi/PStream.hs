@@ -20,10 +20,12 @@ import           Tydi.Data.Slice (Slice,slice)
 import qualified Tydi.Data.Slice as Slice
 import           Tydi.Data.Prefix (Prefix,prefix)
 import qualified Tydi.Data.Prefix as Prefix
-import Data.Maybe (fromMaybe, isJust, fromJust)
+import Data.Maybe (fromMaybe, isJust, fromJust, catMaybes)
 import Optics.Lens
 import Optics.Getter
 import Optics.Prism
+
+import Shockwaves.Viewer
 
 data PStream c n d u e where
   PStream
@@ -505,11 +507,6 @@ instance (
   rnfX p = (rnfX $ getDataSliced p) `seq` (rnfX $ getLast p) `seq` (rnfX $ getUser p)
 
 
-
-
--- functor over data type
--- TODO
-
 -- OPTICS
 
 _strobed :: (CompleteComplexity' c n d u e', HasMultiStrb c ~ True, n~n0+1)
@@ -566,3 +563,37 @@ _transfer = _tf
 
 -- shockwaves
 -- TODO
+
+deriving instance (Show (PStream c n d u e)) => Display (PStream c n d u e)
+instance (Split (PStreamTransfer c n d u e), Display (PStreamTransfer c n d u e), n~n0+1) => Split (PStream c n d u e) where
+  structure = VICompound [("transfer", structure @(PStreamTransfer c n d u e))]
+  split (Transfer tf) _ = [SubFieldTranslationResult "transfer" $ translate tf]
+  split _ _ = []
+
+deriving instance (Show (PStreamTransfer c n d u e)) => Display (PStreamTransfer c n d u e)
+instance (
+    KnownNat n,
+    Split u, Display u,
+    Split e, Display e,
+    Split (LastType' c n d), Display (LastType' c n d),
+    Split (StrbType' c n), Display (StrbType' c n),
+    Split (StaiType' c n), Display (StaiType' c n)
+  ) => Split (PStreamTransfer c n d u e) where
+  structure = VICompound
+    [ ("data", structure @(Vec n e))
+    , ("last", structure @(LastType' c n d))
+    , ("user", structure @u)
+    , ("stai", structure @(StaiType' c n))
+    , ("endi", structure @(Index n))
+    , ("strobe", structure @(StrbType' c n))
+    ]
+  split tf _ =
+    [ SubFieldTranslationResult "data" $ TranslationResult (VRNotPresent,VKNormal) $ catMaybes (toList $ imap goData $ getDataStrobed tf)
+    , SubFieldTranslationResult "last" $ translate $ getLast tf
+    , SubFieldTranslationResult "user" $ translate $ getUser tf
+    , SubFieldTranslationResult "stai" $ translate $ getStai tf
+    , SubFieldTranslationResult "endi" $ translate $ getEndi tf
+    , SubFieldTranslationResult "strobe" $ translate $ getStrb tf -- TODO hide strobe signals that are shadowed by stai,endi
+    ]
+    where goData _ Nothing = Nothing
+          goData i (Just x) = Just $ SubFieldTranslationResult (show i) $ translate x

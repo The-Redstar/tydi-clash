@@ -98,9 +98,6 @@ instance (Bundle a, Bundle b) => Bundle (a :&: b) where
   unbundle groups = unbundle ((\(a :&: _) -> a) <$> groups) :&: unbundle ((\(_ :&: b) -> b) <$> groups)
 
 
--- ISOMORPHICS
--- TODO
-
 -- STANDARD FUNCTIONALITY
 
 -- eq

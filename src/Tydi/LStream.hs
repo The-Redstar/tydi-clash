@@ -22,7 +22,7 @@ data Direction = Forward | Reverse deriving (Show)
 
 
 
--- optics
--- TODO
+-- optics?
+-- todo? (type level optic stuff)
 
 

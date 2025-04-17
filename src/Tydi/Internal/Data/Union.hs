@@ -88,11 +88,6 @@ instance (
       bits = resize $ pack x
 
 
--- ISOMORPHICS
--- TODO
-
-
-
 -- BUNDLES
 instance Bundle (Union a) -- like Maybe, just use default implementation (i.e. not unbundleable)
 

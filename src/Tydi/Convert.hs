@@ -82,7 +82,6 @@ instance (TydiConvertible'' a b,TydiConvertible'' c d) => TydiConvertible'' (a :
 instance (UnionUnionConvert (Union a) a (Union b) b 0) => TydiConvertible'' (Union a) (Union b) where
   convert'' = unionConvert @(Union a) @a @(Union b) @b @0
 
--- TODO: union
 class (UnionCount a ~ UnionCount b) => UnionUnionConvert a x b y (n::Nat) where
   unionConvert :: a -> b
 instance (
@@ -153,7 +152,7 @@ instance (Flatten ((a :+: (b :+: c)) p)) => Flatten (((a :+: b) :+: c) p) where
     R1 (L1 b) -> L1 (R1 b)
     R1 (R1 c) -> R1     c
 instance (Flatten (b p), WithoutP (Flattened (b p)) p ~ Flattened (b p)) => Flatten ((C1 meta fields :+: b) p) where
-  type Flattened ((C1 meta fields :+: b) p) = (C1 meta fields :+: WithoutP (Flattened (b p))) p -- uh oh TODO
+  type Flattened ((C1 meta fields :+: b) p) = (C1 meta fields :+: WithoutP (Flattened (b p))) p
   flatten (L1 a ) = L1 a
   flatten (R1 b) = R1 $ flatten b
   unflatten (L1 a) = L1 a

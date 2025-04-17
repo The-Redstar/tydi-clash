@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 
 module Tydi.Data.Slice (
@@ -38,11 +39,14 @@ import Clash.Explicit.Prelude hiding (
   replace,
  )
 import qualified Clash.Sized.Vector as V
+import qualified Prelude as Pre
 import qualified Tydi.Data.Prefix as P
 import           Tydi.Data.Prefix (Zippable,Zipped,zip,zipWith)
 import qualified Tydi.Data.Range as R
 import           Tydi.Data.Range hiding (full,start,end,range)
 import           Data.Foldable (foldr)
+import           Data.Maybe (catMaybes)
+import           Shockwaves.Viewer
 
 -- closed interval, non-empty slice of a vector
 
@@ -366,4 +370,9 @@ unzip7 Slice'{range,vec} = (Slice'{range,vec=a},Slice'{range,vec=b},Slice'{range
 -- TODO
 
 -- SHOCKWAVES
--- TODO
+deriving instance (Show (Slice n a)) => Display (Slice n a)
+instance (Display a, Split a, KnownNat n) => Split (Slice n a) where
+  structure = VICompound $ (("range",structure @(Range n)) :) $ Pre.zip (Pre.map show [(0::Integer)..]) $ toList $ repeat @n (structure @a)
+  split p@Slice'{range} _ = (SubFieldTranslationResult "range" (translate range)) : catMaybes (toList $ imap go $ strobed p)
+    where go _ Nothing = Nothing
+          go i (Just x) = Just $ SubFieldTranslationResult (show i) $ translate x

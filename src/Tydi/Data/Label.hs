@@ -27,5 +27,3 @@ instance Eq a => Eq (lbl >:: a) where
 instance (Show a, KnownSymbol lbl) => Show (lbl >:: a) where
   show (L x) = symbolVal (Proxy @lbl) <> " = " <> show x
 
--- SHOCKWAVES
--- TODO

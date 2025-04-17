@@ -3,8 +3,9 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
-{-# HLINT ignore "Move brackets to avoid $" #-}
+-- {-# HLINT ignore "Move brackets to avoid $" #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Tydi.Data.Prefix (
   Prefix,pattern Prefix,
@@ -37,8 +38,11 @@ import Clash.Explicit.Prelude hiding (
   traverse#,fold,foldr,ifoldr,
  )
 import qualified Clash.Sized.Vector as V
+import qualified Prelude as Pre
 -- import Data.Data (Data)
 import Data.Foldable (foldr)
+import Data.Maybe (catMaybes)
+import Shockwaves.Viewer
 
 -- like Slice, but without a start index
 data Prefix n a where
@@ -352,3 +356,10 @@ unzip7 Prefix'{end,vec} = (Prefix'{end,vec=a},Prefix'{end,vec=b},Prefix'{end,vec
 
 -- SHOCKWAVES
 -- TODO
+
+deriving instance (Show (Prefix n a)) => Display (Prefix n a)
+instance (Display a, Split a, KnownNat n) => Split (Prefix n a) where
+  structure = VICompound $ (("end",structure @(Index n)) :) $ Pre.zip (Pre.map show [(0::Integer)..]) $ toList $ repeat @n (structure @a)
+  split p@Prefix'{end} _ = (SubFieldTranslationResult "end" (translate end)) : catMaybes (toList $ imap go $ strobed p)
+    where go _ Nothing = Nothing
+          go i (Just x) = Just $ SubFieldTranslationResult (show i) $ translate x

@@ -13,6 +13,7 @@ import Tydi.Data.Label ( type (>::) )
 import Optics.Prism
 import Data.Proxy
 -- import GHC.TypeLits (natSing)
+import Shockwaves.Viewer
 
 -- unions
 data Union a = Union{
@@ -126,4 +127,18 @@ instance (UShow a i n w, UShow b (i+1) n w, i+1<=n,KnownNat n, KnownNat i) => US
 
 
 -- SHOCKWAVES
--- TODO
+deriving instance (Show (Union a)) => Display (Union a)
+instance (UnionSplit a 0 (UnionCount a) (UnionWidth a)) => Split (Union a) where
+  structure                = VICompound $ unionStruct @a @0 @(UnionCount a) @(UnionWidth a)
+  split Union{tag,union} _ =            [ unionSplit  @a @0 @(UnionCount a) @(UnionWidth a) tag union ]
+  -- show Union{tag,union} = "Union {" <> ushow @a @0 @(UnionCount a) @(UnionWidth a) tag union <> "}"
+
+class UnionSplit a (i::Nat) (n::Nat) (w::Nat) where
+  unionStruct :: [(String,VariableInfo)]
+  unionSplit  :: Index n -> BitVector w -> SubFieldTranslationResult
+instance (KnownNat w,KnownNat n,KnownNat i,BitPack a,Display a,Split a,i+1<=n,KnownSymbol lbl) => UnionSplit (lbl >:: a) i n w where
+  unionStruct = [(symbolVal (Proxy @lbl), structure @a)]
+  unionSplit _ x = SubFieldTranslationResult (symbolVal (Proxy @lbl)) $ translate $ unpack @a (resize x)
+instance (UnionSplit a i n w, UnionSplit b (i+1) n w, i+1<=n,KnownNat n, KnownNat i) => UnionSplit (a :|: b) i n w where
+  unionStruct = unionStruct @a @i @n @w <> unionStruct @b @(i+1) @n @w
+  unionSplit i x = if i==fromSNat (SNat @i) then unionSplit @a @i @n @w i x else unionSplit @b @(i+1) @n @w i x

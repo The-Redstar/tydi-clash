@@ -16,7 +16,9 @@ import Clash.Explicit.Prelude
 -- import Data.Type.Bool (If)
 
 import Optics.Lens
+import Data.Proxy (Proxy(..))
 import Tydi.Data.Label (type (>::)(..))
+import Shockwaves.Viewer
 
 -- groups
 newtype Group a = Group a deriving (Generic,BitPack)
@@ -121,4 +123,17 @@ instance (Show a, Show b) => Show (a :&: b) where
 -- TODO
 
 -- SHOCKWAVES
--- TODO
+deriving instance (Show (Group a)) => Display (Group a)
+instance (GroupSplit a) => Split (Group a) where
+  structure = VICompound (groupStruct @a)
+  split (Group x) _ = groupSplit x
+
+class GroupSplit a where
+  groupStruct :: [(String,VariableInfo)]
+  groupSplit :: a -> [SubFieldTranslationResult]
+instance (GroupSplit a, GroupSplit b) => GroupSplit (a :&: b) where
+  groupStruct = groupStruct @a <> groupStruct @b
+  groupSplit (x :&: y) = groupSplit x <> groupSplit y
+instance (Split a, Display a, KnownSymbol lbl) => GroupSplit (lbl >:: a) where
+  groupStruct = [(symbolVal $ Proxy @lbl,structure @a)]
+  groupSplit (L x) = [SubFieldTranslationResult (symbolVal $ Proxy @lbl) $ translate x]

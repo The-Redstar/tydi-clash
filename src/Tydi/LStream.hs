@@ -11,11 +11,12 @@ data LStream dim (sync::SyncMode) (dir::Direction) (force::Bool) c t user dat --
 -- type Stream = New
 
 -- common stream types
-type Dim  = LStream 1 Sync    'Forward 'False
-type New  = LStream 0 Sync    'Forward 'False
-type Des  = LStream 0 Desync  'Forward 'False
-type Flat = LStream 0 Flatten 'Forward 'False
-type Rev  = LStream 0 Sync    'Reverse 'False
+type Dim' d = LStream d Sync    'Forward 'False
+type Dim    = Dim' 1
+type New    = LStream 0 Sync    'Forward 'False
+type Des    = LStream 0 Desync  'Forward 'False
+type Flat   = LStream 0 Flatten 'Forward 'False
+type Rev    = LStream 0 Sync    'Reverse 'False
 
 data SyncMode = Sync | Flatten | Desync | FlatDesync deriving (Show)
 data Direction = Forward | Reverse deriving (Show)

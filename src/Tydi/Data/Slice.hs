@@ -61,8 +61,7 @@ pattern Slice range vec <- Slice'{range,vec}  where
 
 
 deriving instance (KnownNat n,Lift a) => Lift (Slice n a)
--- deriving instance Data (Slice n a) -- TODO
--- deriving instance Generic (Slice n a) -- TODO
+
 deriving instance Bundle (Slice n a)
 
 slice :: (KnownNat n) => Range n -> Vec n a -> Slice n a

@@ -54,8 +54,6 @@ pattern Prefix end vec <- Prefix'{end,vec}  where
 {-# COMPLETE Prefix #-}
 
 deriving instance (KnownNat n,Lift a) => Lift (Prefix n a)
--- deriving instance Data (Prefix n a) -- TODO
--- deriving instance Generic (Prefix n a) -- TODO
 deriving instance Bundle (Prefix n a)
 
 prefix :: (KnownNat n,n~n0+1) => Index n -> Vec n a -> Prefix n a
@@ -355,7 +353,6 @@ unzip7 Prefix'{end,vec} = (Prefix'{end,vec=a},Prefix'{end,vec=b},Prefix'{end,vec
 -- TODO
 
 -- SHOCKWAVES
--- TODO
 
 deriving instance (Show (Prefix n a)) => Display (Prefix n a)
 instance (Display a, Split a, KnownNat n) => Split (Prefix n a) where

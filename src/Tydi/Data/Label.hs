@@ -8,7 +8,7 @@ import Data.Proxy
 
 -- labels for Group/Union
 infixl 7 >::
-newtype (>::) l a = L a deriving (BitPack, Generic)
+newtype (>::) l a = L a deriving (BitPack,Generic,NFDataX,Eq)
 
 -- BUNDLES
 instance Bundle (l >:: a) where
@@ -19,9 +19,9 @@ instance Bundle (l >:: a) where
 -- STANDARD FUNCTIONALITY
 -- TODO
 
--- eq
-instance Eq a => Eq (lbl >:: a) where
-  (==) (L x) (L y) = x==y
+-- -- eq
+-- instance Eq a => Eq (lbl >:: a) where
+--   (==) (L x) (L y) = x==y
 
 -- show
 instance (Show a, KnownSymbol lbl) => Show (lbl >:: a) where

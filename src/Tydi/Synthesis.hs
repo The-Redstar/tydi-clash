@@ -12,6 +12,8 @@ import Tydi.LStream
 import Tydi.Data
 import Optics.Core
 
+import Shockwaves
+
 
 -- synthesis
 type Synth x = Synth' (C 0) 1 0 x
@@ -65,7 +67,7 @@ type family RemoveStreams x where
   RemoveStreams x = x
 
 -- stream node
-data StreamNode p h = StreamNode{stream::p,child::h}
+data StreamNode p h = StreamNode{stream::p,child::h} deriving (Show,Generic,Display,Split,NFDataX)
 
 -- optics
 _stream :: Lens (StreamNode p h) (StreamNode p' h) p p'
@@ -80,4 +82,4 @@ instance (Bundle h) => Bundle (StreamNode p h) where
   bundle (StreamNode ps hs) = StreamNode <$> ps <*> bundle hs
   unbundle nodes = StreamNode ((^. getting _stream) <$> nodes) $ unbundle ((^. getting _child) <$> nodes)
 
--- TODO: flatten? make thigns more liek the Tydi specification
+-- TODO: flatten? make thigns more like the Tydi specification

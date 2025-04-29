@@ -21,10 +21,10 @@ import Tydi.Data.Label (type (>::)(..))
 import Shockwaves.Viewer
 
 -- groups
-newtype Group a = Group a deriving (Generic,BitPack)
+newtype Group a = Group a deriving (Generic,BitPack,NFDataX)
 
 infixr 5 :&:
-data (:&:) l r = (:&:) l r deriving (Generic,BitPack)
+data (:&:) l r = (:&:) l r deriving (Generic,BitPack,NFDataX)
 
 
 

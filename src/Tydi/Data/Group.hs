@@ -19,12 +19,13 @@ import Optics.Lens
 import Data.Proxy (Proxy(..))
 import Tydi.Data.Label (type (>::)(..))
 import Shockwaves.Viewer
+import Data.Typeable
 
 -- groups
-newtype Group a = Group a deriving (Generic,BitPack,NFDataX)
+newtype Group a = Group a deriving (Generic,BitPack,NFDataX,Typeable)
 
 infixr 5 :&:
-data (:&:) l r = (:&:) l r deriving (Generic,BitPack,NFDataX)
+data (:&:) l r = (:&:) l r deriving (Generic,BitPack,NFDataX,Typeable)
 
 
 

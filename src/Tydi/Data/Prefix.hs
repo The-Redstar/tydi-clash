@@ -43,6 +43,7 @@ import qualified Prelude as Pre
 import Data.Foldable (foldr)
 import Data.Maybe (catMaybes)
 import Shockwaves.Viewer
+import Data.Typeable
 
 -- like Slice, but without a start index
 data Prefix n a where
@@ -55,6 +56,7 @@ pattern Prefix end vec <- Prefix'{end,vec}  where
 
 deriving instance (KnownNat n,Lift a) => Lift (Prefix n a)
 deriving instance Bundle (Prefix n a)
+deriving instance Typeable (Prefix n a)
 
 prefix :: (KnownNat n,n~n0+1) => Index n -> Vec n a -> Prefix n a
 prefix e v = Prefix'{end=e,vec=V.zipWith (\i x -> if i<=e then x else errorX "Outside of prefix range") indicesI v}

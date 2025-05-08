@@ -14,6 +14,9 @@ import Optics.Prism
 import Data.Proxy
 -- import GHC.TypeLits (natSing)
 import Shockwaves.Viewer
+import Data.Typeable
+
+import Clash.XException     (NFDataX, isX)
 
 -- unions
 data Union a = Union{
@@ -22,9 +25,11 @@ data Union a = Union{
   } deriving (Generic)
 -- deriving instance (KnownNat (UnionCount a), KnownNat (UnionWidth a)) => Show (Union a)
 deriving instance (KnownNat (UnionCount a), KnownNat (UnionWidth a), 1 <= UnionCount a) => BitPack (Union a)
+deriving instance (KnownNat (UnionCount a), KnownNat (UnionWidth a), 1 <= UnionCount a) => NFDataX (Union a) --NFDataX isn't working properly like this!
+deriving instance Typeable (Union a)
 
 infixr 6 :|:
-data (:|:) l r
+data (:|:) l r deriving (Typeable)
 
 type family UnionCount x :: Nat where
   UnionCount (_ >:: _) = 1
@@ -137,3 +142,7 @@ instance (KnownNat w,KnownNat n,KnownNat i,BitPack a,Display a,Split a,i+1<=n,Kn
 instance (UnionSplit a i n w, UnionSplit b (i+1) n w, i+1<=n,KnownNat n, KnownNat i) => UnionSplit (a :|: b) i n w where
   unionStruct = unionStruct @a @i @n @w <> unionStruct @b @(i+1) @n @w
   unionSplit i x = if i==fromSNat (SNat @i) then unionSplit @a @i @n @w i x else unionSplit @b @(i+1) @n @w i x
+
+-- instance NFDataX (Union a) where
+--   deepErrorX s = Union (errorX s) (errorX s)
+-- TODO: create proper NFDataX instance

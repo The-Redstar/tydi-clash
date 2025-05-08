@@ -47,6 +47,7 @@ import           Tydi.Data.Range hiding (full,start,end,range)
 import           Data.Foldable (foldr)
 import           Data.Maybe (catMaybes)
 import           Shockwaves.Viewer
+import           Data.Typeable
 
 -- closed interval, non-empty slice of a vector
 
@@ -61,8 +62,8 @@ pattern Slice range vec <- Slice'{range,vec}  where
 
 
 deriving instance (KnownNat n,Lift a) => Lift (Slice n a)
-
 deriving instance Bundle (Slice n a)
+deriving instance Typeable (Slice n a)
 
 slice :: (KnownNat n) => Range n -> Vec n a -> Slice n a
 slice r v = Slice' r (zipWith (\i x -> if R.contains r i then x else undefined) indicesI v)

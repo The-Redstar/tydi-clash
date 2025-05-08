@@ -4,11 +4,13 @@
 module Tydi.Data.Range (Range, pattern Range,range,safeRange,unsafeRange,start,end,contains,full) where
 import Clash.Prelude
 import Shockwaves
+import Data.Typeable
 
 -- Inclusive index range meant for slicing vectors
 data Range n = Range'{start::Index n,end::Index n} deriving (Show,Generic,Display,Split)
 deriving instance (KnownNat n, 1<=n) => BitPack (Range n)
 deriving instance (KnownNat n) => Lift (Range n)
+deriving instance Typeable (Range n)
 
 pattern Range :: Index n -> Index n -> Range n
 pattern Range start end <- Range'{start,end}  where

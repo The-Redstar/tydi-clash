@@ -11,6 +11,7 @@ import Tydi.PStream
 import Tydi.LStream
 import Tydi.Data
 import Optics.Core
+import Data.Typeable
 
 import Shockwaves
 
@@ -20,7 +21,7 @@ type Synth x = Synth' (C 0) 1 0 x
 
 type family Synth' (c::Complexity) (t::Nat) (dim::Nat) x where
   Synth' c t dim (l >:: a) = l >:: Synth' c t dim a
-  Synth' c t dim (Group a) = Synth' c t dim a
+  Synth' c t dim (Group a) = Group (Synth' c t dim a)
   Synth' c t dim (a :&: b) = Synth' c t dim a :&: Synth' c t dim b
   Synth' c t dim (Union a) = Synth' c t dim (Group (ToGroup a))
 
@@ -67,7 +68,12 @@ type family RemoveStreams x where
   RemoveStreams x = x
 
 -- stream node
-data StreamNode p h = StreamNode{stream::p,child::h} deriving (Show,Generic,Display,Split,NFDataX)
+data StreamNode p h = StreamNode{stream::p,child::h} deriving (Show,Generic,Display,Split,NFDataX,Typeable,BitPack)
+type family ChildType a where
+  ChildType (StreamNode _ c) = c
+type family StreamType a where
+  StreamType (StreamNode p _) = p
+
 
 -- optics
 _stream :: Lens (StreamNode p h) (StreamNode p' h) p p'

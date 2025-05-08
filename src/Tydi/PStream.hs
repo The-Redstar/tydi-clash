@@ -24,6 +24,7 @@ import Data.Maybe (fromMaybe, isJust, fromJust, catMaybes)
 import Optics.Lens
 import Optics.Getter
 import Optics.Prism
+import Data.Typeable
 
 import Shockwaves.Viewer
 
@@ -96,7 +97,10 @@ instance (CompleteComplexity' c n d u e) => CompleteComplexity (PStreamTransfer 
 instance (CompleteComplexity' c n d u e) => CompleteComplexity (PStream c n d u e)
 
 
-
+deriving instance Typeable (PStream c n d u e)
+deriving instance Typeable (PStreamTransfer c n d u e)
+-- deriving instance BitPack (PStream c n d u e)
+-- deriving instance BitPack (PStreamTransfer c n d u e)
 
 -- patterns for making PStream behave like a Maybe
 pattern Transfer :: PStreamTransfer c n d u e -> PStream c n d u e

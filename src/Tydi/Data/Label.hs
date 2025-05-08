@@ -5,10 +5,11 @@ module Tydi.Data.Label (type (>::)(..)) where
 
 import Clash.Explicit.Prelude
 import Data.Proxy
+import Data.Typeable
 
 -- labels for Group/Union
 infixl 7 >::
-newtype (>::) l a = L a deriving (BitPack,Generic,NFDataX,Eq)
+newtype (>::) l a = L a deriving (BitPack,Generic,NFDataX,Eq,Typeable)
 
 -- BUNDLES
 instance Bundle (l >:: a) where

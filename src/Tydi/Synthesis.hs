@@ -68,7 +68,7 @@ type family RemoveStreams x where
   RemoveStreams x = x
 
 -- stream node
-data StreamNode p h = StreamNode{stream::p,child::h} deriving (Show,Generic,Display,Split,NFDataX,Typeable,BitPack)
+data StreamNode p h = StreamNode{stream::p,child::h} deriving (Show,Generic,Display,Split,NFDataX,Typeable,BitPack,Eq,Default)
 type family ChildType a where
   ChildType (StreamNode _ c) = c
 type family StreamType a where

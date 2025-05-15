@@ -27,7 +27,8 @@ instance (
   ) => Connect (PStream (C c) n d u e) (PStream (C c') n d u' e') where
   connect = tfmap connect
 instance (
-    CompleteComplexity' (C c') n d u' e'
+    CompleteComplexity' (C c) n d u e
+  , CompleteComplexity' (C c') n d u' e'
   , TydiConvertible e e'
   , TydiConvertible u u'
   , c<=c'

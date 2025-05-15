@@ -9,7 +9,7 @@ import Data.Typeable
 
 -- labels for Group/Union
 infixl 7 >::
-newtype (>::) l a = L a deriving (BitPack,Generic,NFDataX,Eq,Typeable)
+newtype (>::) l a = L a deriving (BitPack,Generic,NFDataX,Eq,Typeable,ShowX,Default)
 
 -- BUNDLES
 instance Bundle (l >:: a) where
@@ -28,3 +28,6 @@ instance Bundle (l >:: a) where
 instance (Show a, KnownSymbol lbl) => Show (lbl >:: a) where
   show (L x) = symbolVal (Proxy @lbl) <> " = " <> show x
 
+-- default
+-- instance (Default a) => Default (lbl >:: a) where
+--   def = L def

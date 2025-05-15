@@ -1,4 +1,4 @@
-
+{-# OPTIONS_GHC -fconstraint-solver-iterations=10 #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NoFieldSelectors #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -8,6 +8,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE PatternSynonyms #-}
+{-# LANGUAGE DerivingVia #-}
 
 module Tydi.PStream where
 --import Tydi.Internal.PStreamRead (getUser, Stai (getStaiExt), Data (getDataSliced), getStrbRaw, Strb (getStrbExtRaw))
@@ -28,10 +29,12 @@ import Data.Typeable
 
 import Shockwaves.Viewer
 
-data PStream c n d u e where
+
+
+data PStream c n d u e =
   PStream
-    :: (CompleteComplexity' c n d u e)
-    => { valid :: Bool
+    -- :: (CompleteComplexity' c n d u e)
+       { valid :: Bool
        , dat   :: Vec n e
        , user  :: u
        , last  :: LastType' c n d
@@ -39,8 +42,8 @@ data PStream c n d u e where
        , endi  :: Index n
        , strb  :: StrbType' c n
        }
-    -> PStream c n d u e
-
+    -- -> PStream c n d u e
+    deriving (Generic, Typeable)
 -- Switch to data holding format to allow for /some/ mapping to be done (though this turned out to not really be useful)
 -- data PStream' a where
 --   PStream
@@ -57,17 +60,18 @@ data PStream c n d u e where
 
 -- type PStream c n d u e = PStream' (PStreamTransfer c n d u e)
 
-data PStreamTransfer c n d u e where
+data PStreamTransfer c n d u e =
   PSTransfer
-    :: (CompleteComplexity' c n d u e)
-    => { dat   :: Vec n e
+    -- :: (CompleteComplexity' c n d u e)
+       { dat   :: Vec n e
        , user  :: u
        , last  :: LastType (PStreamTransfer c n d u e)
        , stai  :: StaiType (PStreamTransfer c n d u e)
        , endi  :: Index n
        , strb  :: StrbType (PStreamTransfer c n d u e)
        }
-    -> PStreamTransfer c n d u e
+    -- -> PStreamTransfer c n d u e
+    deriving (Generic, Typeable)
 
 class ( StaiDep (PStreamTransfer c n d u e) (HasStai c)
       , StrbDep (PStreamTransfer c n d u e) (HasMultiStrb c)
@@ -90,17 +94,39 @@ instance
       ) => CompleteComplexity' c n d u e
 
 
-data PStreamReady c n d u e = Ready | NotReady deriving (Show,Generic,BitPack,Eq,NFDataX)
+data PStreamReady c n d u e = NotReady | Ready deriving (Show,Generic,BitPack,Eq,NFDataX)
+instance Default (PStreamReady c n d u e) where
+  def = NotReady
+
 
 class (CompleteComplexity' (ComplexityLevel a) (Lanes a) (Dims a) (UserType a) (DataType a)) => CompleteComplexity a
 instance (CompleteComplexity' c n d u e) => CompleteComplexity (PStreamTransfer c n d u e)
 instance (CompleteComplexity' c n d u e) => CompleteComplexity (PStream c n d u e)
 
 
-deriving instance Typeable (PStream c n d u e)
-deriving instance Typeable (PStreamTransfer c n d u e)
--- deriving instance BitPack (PStream c n d u e)
--- deriving instance BitPack (PStreamTransfer c n d u e)
+
+-- deriving instance Typeable (PStream c n d u e)
+-- deriving instance Typeable (PStreamTransfer c n d u e)
+deriving instance
+  ( 1<=n
+  , KnownNat n
+  , BitPack (LastType (PStream c n d u e))
+  , BitPack (StaiType (PStream c n d u e))
+  , BitPack (StrbType (PStream c n d u e))
+  , BitPack u
+  , BitPack e
+  ) => BitPack (PStream c n d u e)
+deriving instance
+  ( 1<=n
+  , KnownNat n
+  , BitPack (LastType (PStream c n d u e))
+  , BitPack (StaiType (PStream c n d u e))
+  , BitPack (StrbType (PStream c n d u e))
+  , BitPack u
+  , BitPack e
+  ) => BitPack (PStreamTransfer c n d u e)
+
+
 
 -- patterns for making PStream behave like a Maybe
 pattern Transfer :: PStreamTransfer c n d u e -> PStream c n d u e
@@ -205,20 +231,20 @@ getDataRaw PSTransfer{dat} = dat
 class DataFunc p bstai bstrb where
   getDataSliced' :: p -> SliceStrbType p
   getDataStrobed' :: p -> Vec (Lanes p) (Maybe (DataType p))
-instance (HasStai c ~ False, HasMultiStrb c ~ False,n~n0+1) => DataFunc (PStreamTransfer c n d u e) False False where
+instance (CompleteComplexity' c n d u e,HasStai c ~ False, HasMultiStrb c ~ False,n~n0+1) => DataFunc (PStreamTransfer c n d u e) False False where
   getDataSliced' PSTransfer{dat,endi,strb} = fromBool strb $ prefix endi dat
   getDataStrobed' PSTransfer{dat,endi,strb} = zipWith fromBool (maskRange 0 endi (repeat strb)) dat
-instance (HasStai c ~ True, HasMultiStrb c ~ False) => DataFunc (PStreamTransfer c n d u e) True False where
+instance (CompleteComplexity' c n d u e,HasStai c ~ True, HasMultiStrb c ~ False) => DataFunc (PStreamTransfer c n d u e) True False where
   getDataSliced' PSTransfer{dat,stai,endi,strb} = fromBool strb $ slice (Range stai endi) dat
   getDataStrobed' PSTransfer{dat,stai,endi,strb} = zipWith fromBool (maskRange stai endi (repeat strb)) dat
-instance (HasStai c ~ True, HasMultiStrb c ~ True) => DataFunc (PStreamTransfer c n d u e) True True where
+instance (CompleteComplexity' c n d u e,HasStai c ~ True, HasMultiStrb c ~ True) => DataFunc (PStreamTransfer c n d u e) True True where
   getDataSliced' PSTransfer{dat,stai,endi,strb} = slice (Range stai endi) $ zipWith fromBool strb dat
   getDataStrobed' PSTransfer{dat,stai,endi,strb} = zipWith fromBool (maskRange stai endi strb) dat
 
 
-getDataSliced :: PStreamTransfer c n d u e -> SliceStrbType (PStreamTransfer c n d u e)
+getDataSliced :: (CompleteComplexity' c n d u e) => PStreamTransfer c n d u e -> SliceStrbType (PStreamTransfer c n d u e)
 getDataSliced (p@PSTransfer{}::PStreamTransfer c n d u e) = getDataSliced' @(PStreamTransfer c n d u e) @(HasStai c) @(HasMultiStrb c) p
-getDataStrobed :: PStreamTransfer c n d u e -> Vec n (Maybe e)
+getDataStrobed :: (CompleteComplexity' c n d u e) => PStreamTransfer c n d u e -> Vec n (Maybe e)
 getDataStrobed (p@PSTransfer{}::PStreamTransfer c n d u e) = getDataStrobed' @(PStreamTransfer c n d u e) @(HasStai c) @(HasMultiStrb c) p
 
 
@@ -233,14 +259,14 @@ getLast PSTransfer{last} = last
 class LastDep p b where
   getLastExt' :: p -> Vec (Lanes p) (Vec (Dims p) Bool)
   mkLast :: Vec (Lanes p) (Vec (Dims p) Bool) -> LastType p
-instance (HasMultiLast c ~ False, n~n0+1) => LastDep (PStreamTransfer c n d u e) False where
+instance (CompleteComplexity' c n d u e, HasMultiLast c ~ False, n~n0+1) => LastDep (PStreamTransfer c n d u e) False where
   getLastExt' PSTransfer{last} = reverse $ last :> repeat (repeat False)
   mkLast = Clash.Explicit.Prelude.last
 instance (HasMultiLast c ~ True) => LastDep (PStreamTransfer c n d u e) True where
   getLastExt' PSTransfer{last} = last
   mkLast = id
 
-getLastExt :: PStreamTransfer c n d u e -> Vec n (Vec d Bool)
+getLastExt :: (CompleteComplexity' c n d u e) => PStreamTransfer c n d u e -> Vec n (Vec d Bool)
 getLastExt (p@PSTransfer{}::PStreamTransfer c n d u e) = getLastExt' @(PStreamTransfer c n d u e) @(HasMultiLast c) p
 
 -- stai
@@ -257,7 +283,7 @@ instance (HasStai c ~ True) => StaiDep (PStreamTransfer c n d u e) True where
   getStaiExt' PSTransfer{stai} = stai
   mkStai = id
 
-getStaiExt :: PStreamTransfer c n d u e -> Index n
+getStaiExt :: (CompleteComplexity' c n d u e) => PStreamTransfer c n d u e -> Index n
 getStaiExt (p@PSTransfer{}::PStreamTransfer c n d u e) = getStaiExt' @(PStreamTransfer c n d u e) @(HasStai c) p
 
 -- endi
@@ -267,7 +293,7 @@ getEndi PSTransfer{endi} = endi
 -- strb
 getStrbRaw :: PStreamTransfer c n d u e -> StrbType (PStream c n d u e)
 getStrbRaw PSTransfer{strb} = strb
-getStrbExt :: PStreamTransfer c n d u e -> Vec n Bool
+getStrbExt :: (CompleteComplexity' c n d u e) => PStreamTransfer c n d u e -> Vec n Bool
 getStrbExt p@PSTransfer{} = maskRange (getStaiExt p) (getEndi p) (getStrbExtRaw p)
 
 class StrbDep p b where
@@ -275,20 +301,20 @@ class StrbDep p b where
   getStrbExtRaw' :: p -> Vec (Lanes p) Bool
   mkStrb :: StrbType p -> Vec (Lanes p) Bool -> StrbType p
   mkStrb' :: Vec (Lanes p) Bool -> StrbType p
-instance (HasMultiStrb c ~ False, n~n0+1) => StrbDep (PStreamTransfer c n d u e) False where
+instance (CompleteComplexity' c n d u e, HasMultiStrb c ~ False, n~n0+1) => StrbDep (PStreamTransfer c n d u e) False where
   getStrb' = getStrbRaw
   getStrbExtRaw' PSTransfer{strb} = repeat strb
   mkStrb raw _ext = raw
   mkStrb' ext = V.last ext
-instance (HasMultiStrb c ~ True) => StrbDep (PStreamTransfer c n d u e) True where
+instance (CompleteComplexity' c n d u e, HasMultiStrb c ~ True) => StrbDep (PStreamTransfer c n d u e) True where
   getStrb' = getStrbExt
   getStrbExtRaw' = getStrbRaw
   mkStrb _raw ext = ext
   mkStrb' ext = ext
 
-getStrb :: PStreamTransfer c n d u e -> StrbType (PStreamTransfer c n d u e)
-getStrb (p@PSTransfer{}::PStreamTransfer c n d u e) = getStrb' @(PStreamTransfer c n d u e) @(HasMultiStrb c) p
-getStrbExtRaw :: PStreamTransfer c n d u e -> Vec n Bool
+getStrb :: (CompleteComplexity' c n d u e) => PStreamTransfer c n d u e -> StrbType (PStreamTransfer c n d u e)
+getStrb (p::PStreamTransfer c n d u e) = getStrb' @(PStreamTransfer c n d u e) @(HasMultiStrb c) p
+getStrbExtRaw :: (CompleteComplexity' c n d u e) =>PStreamTransfer c n d u e -> Vec n Bool
 getStrbExtRaw (p@PSTransfer{}::PStreamTransfer c n d u e) = getStrbExtRaw' @(PStreamTransfer c n d u e) @(HasMultiStrb c) p
 
 -- SETTERS
@@ -370,11 +396,11 @@ fromSlice = fromSlice' @(PStreamTransfer c n d u e) @(HasStai c) @(HasMultiStrb 
 
 -- SEAL
 
-seal :: PStream c n d u e -> PStream c n d u e
+seal :: (CompleteComplexity' c n d u e) => PStream c n d u e -> PStream c n d u e
 seal p@PStream{} = fromTransfer $ sealTransfer <$> getTransfer p
 
-
-sealTransfer :: forall (c::Complexity) (n::Nat) (d::Nat) u e . PStreamTransfer c n d u e -> PStreamTransfer c n d u e
+--TODO: remove forall?
+sealTransfer :: forall (c::Complexity) (n::Nat) (d::Nat) u e . (CompleteComplexity' c n d u e) => PStreamTransfer c n d u e -> PStreamTransfer c n d u e
 sealTransfer p@PSTransfer{dat,user,last,stai,endi,strb} = PSTransfer{
     dat  = zipWith undefFromBool (getStrbExt p) dat
   , user = user
@@ -452,8 +478,9 @@ instance (CompleteComplexity' c n d u e, Eq u, Eq e) => Eq (PStreamTransfer c n 
     && (getDataStrobed a == getDataStrobed b)
     && (getLastExt a == getLastExt b)
 
-
-
+-- default
+instance (CompleteComplexity' c n d u e) => Default (PStream c n d u e) where
+  def = NoTransfer
 
 
 -- show
@@ -463,7 +490,8 @@ instance (Show (PStreamTransfer c n d u e)) => Show (PStream c n d u e) where
     Transfer t -> "Transfer (" <> show t <> ")"
     _ -> "NoTransfer"
 instance
-  ( Show u
+  ( CompleteComplexity' c n d u e
+  , Show u
   , Show e
   , n~n0+1
   , Show (LastType' c n d)
@@ -513,25 +541,25 @@ instance (
 
 -- OPTICS
 
-_strobed :: (CompleteComplexity' c n d u e', HasMultiStrb c ~ True, n~n0+1)
+_strobed :: (CompleteComplexity' c n d u e, CompleteComplexity' c n d u e', HasMultiStrb c ~ True, n~n0+1)
   => Lens (PStreamTransfer c n d u e) (PStreamTransfer c n d u e') (Vec n (Maybe e)) (Vec n (Maybe e'))
 _strobed = lens getDataStrobed (\tf s -> fromStrobed s (getLast tf) (getUser tf))
 
-_toStrobed :: Getter (PStreamTransfer c n d u e) (Vec n (Maybe e))
+_toStrobed :: (CompleteComplexity' c n d u e) => Getter (PStreamTransfer c n d u e) (Vec n (Maybe e))
 _toStrobed = to getDataStrobed
 
-_sliced :: (CompleteComplexity' c n d u e')
+_sliced :: (CompleteComplexity' c n d u e, CompleteComplexity' c n d u e')
   => Lens (PStreamTransfer c n d u e) (PStreamTransfer c n d u e') (SliceStrbType' c n e) (SliceStrbType' c n e')
 _sliced = lens getDataSliced (\tf s -> fromSlice s (getLast tf) (getUser tf))
 
 -- _strb (get only
-_strb :: Getter (PStreamTransfer c n d u e) (StrbType' c n)
+_strb :: (CompleteComplexity' c n d u e) => Getter (PStreamTransfer c n d u e) (StrbType' c n)
 _strb = to getStrb
 
 -- _stai (get only)
 _stai :: Getter (PStreamTransfer c n d u e) (StaiType' c n)
 _stai = to getStai
-_staiExt :: Getter (PStreamTransfer c n d u e) (Index n)
+_staiExt :: (CompleteComplexity' c n d u e) => Getter (PStreamTransfer c n d u e) (Index n)
 _staiExt = to getStaiExt
 
 -- _endi (get only)
@@ -548,7 +576,7 @@ _last = lens getLast upd
 _user :: (CompleteComplexity' c n d u' e) => Lens (PStreamTransfer c n d u e) (PStreamTransfer c n d u' e) u u'
 _user = lens getUser upd
   where upd :: (CompleteComplexity' c n d u' e) => PStreamTransfer c n d u e -> u' -> PStreamTransfer c n d u' e
-        upd tf@PSTransfer{} user = tf{user}
+        upd tf user = tf{user}
 
 -- _tf _transfer (g/s) -> prism
 _tf :: (CompleteComplexity' c n' d' u' e')
@@ -576,7 +604,7 @@ instance (Split (PStreamTransfer c n d u e), Display (PStreamTransfer c n d u e)
 
 deriving instance (Show (PStreamTransfer c n d u e)) => Display (PStreamTransfer c n d u e)
 instance (
-    KnownNat n,
+    CompleteComplexity' c n d u e,
     Split u, Display u,
     Split e, Display e,
     Split (LastType' c n d), Display (LastType' c n d),
@@ -601,3 +629,9 @@ instance (
     ]
     where goData _ Nothing = Nothing
           goData i (Just x) = Just $ SubFieldTranslationResult (show i) $ translate x
+
+
+instance Display (PStreamReady c n d u e) where
+  kind Ready = VKNormal
+  kind NotReady = VKWarn
+deriving via NoSplit (PStreamReady c n d u e) instance Split (PStreamReady c n d u e)

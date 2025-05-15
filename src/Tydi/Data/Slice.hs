@@ -51,8 +51,7 @@ import           Data.Typeable
 
 -- closed interval, non-empty slice of a vector
 
-data Slice n a where
-  Slice' :: {range::Range n,vec::Vec n a} -> Slice n a
+data Slice n a = Slice'{range::Range n,vec::Vec n a} deriving (Generic)
 
 
 pattern Slice :: (KnownNat n,n~n0+1) => Range n -> Vec n a -> Slice n a
@@ -64,6 +63,7 @@ pattern Slice range vec <- Slice'{range,vec}  where
 deriving instance (KnownNat n,Lift a) => Lift (Slice n a)
 deriving instance Bundle (Slice n a)
 deriving instance Typeable (Slice n a)
+deriving instance (KnownNat n, n~n0+1, BitPack a) => BitPack (Slice n a)
 
 slice :: (KnownNat n) => Range n -> Vec n a -> Slice n a
 slice r v = Slice' r (zipWith (\i x -> if R.contains r i then x else undefined) indicesI v)
@@ -140,7 +140,7 @@ instance (KnownNat n) => Foldable (Slice n) where
 foldr# :: (KnownNat m) => (a -> b -> b) -> b -> Index m -> Range m -> Vec n a -> b
 foldr# _ z _ _ Nil           = z -- should not be possible
 foldr# f z i r@(Range s e) (x `Cons` xs) | i<s       = foldr# f z (i+1) r xs
-                                         | i<=e      = f x z
+                                         | i==e      = f x z
                                          | otherwise = f x (foldr# f z (i+1) r xs)
 
 instance (KnownNat n) => Traversable (Slice n) where --TODO: what is this supposed to do?

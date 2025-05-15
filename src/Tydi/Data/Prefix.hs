@@ -46,8 +46,7 @@ import Shockwaves.Viewer
 import Data.Typeable
 
 -- like Slice, but without a start index
-data Prefix n a where
-  Prefix' :: (n~n0+1) => {end::Index n,vec::Vec n a} -> Prefix n a
+data Prefix n a = Prefix'{end::Index n,vec::Vec n a} deriving (Generic)
 
 pattern Prefix :: (KnownNat n,n~n0+1) => Index n -> Vec n a -> Prefix n a
 pattern Prefix end vec <- Prefix'{end,vec}  where
@@ -57,6 +56,7 @@ pattern Prefix end vec <- Prefix'{end,vec}  where
 deriving instance (KnownNat n,Lift a) => Lift (Prefix n a)
 deriving instance Bundle (Prefix n a)
 deriving instance Typeable (Prefix n a)
+deriving instance (KnownNat n, n~n0+1, BitPack a) => BitPack (Prefix n a)
 
 prefix :: (KnownNat n,n~n0+1) => Index n -> Vec n a -> Prefix n a
 prefix e v = Prefix'{end=e,vec=V.zipWith (\i x -> if i<=e then x else errorX "Outside of prefix range") indicesI v}
@@ -72,7 +72,7 @@ full v = Prefix'{end=maxBound,vec=v}
 
 -- (Lift, derived)
 
-instance  (KnownNat n) => Functor (Prefix n) where
+instance (KnownNat n, n~n0+1) => Functor (Prefix n) where
   fmap = map
 
 instance  (KnownNat n,n~n+1) => Applicative (Prefix n) where
@@ -84,10 +84,10 @@ instance (KnownNat n) => Foldable (Prefix n) where
 
 foldr# :: (KnownNat m) => (a -> b -> b) -> b -> Index m -> Index m -> Vec n a -> b
 foldr# _ z _ _ Nil           = z -- should not be possible
-foldr# f z i end (x `Cons` xs) | i<=end    = f x z
+foldr# f z i end (x `Cons` xs) | i==end    = f x z
                                | otherwise = f x (foldr# f z (i+1) end xs)
 
-instance (KnownNat n) => Traversable (Prefix n) where --TODO: what is this supposed to do?
+instance (KnownNat n, n~n0+1) => Traversable (Prefix n) where --TODO: what is this supposed to do?
   traverse f Prefix'{end,vec} = prefix end <$> traverse# f 0 end vec
 
 {-# CLASH_OPAQUE traverse# #-}
@@ -96,10 +96,10 @@ traverse# :: forall a f b n m . (Applicative f, KnownNat n, KnownNat m) => (a ->
 traverse# _ _ _ Nil           = pure Nil
 traverse# f i end (x `Cons` xs) = if i<=end then Cons <$> f x <*> traverse# f (i+1) end xs else pure $ repeat undefined
 
-instance (KnownNat n, Eq a) => Eq (Prefix n a) where
-  (==) p@Prefix'{} q@Prefix'{} = and (zipWith (==) p q)
+instance (KnownNat n, n~n0+1, Eq a) => Eq (Prefix n a) where
+  (==) p q = and (zipWith (==) p q)
 
-instance (KnownNat n, Ord a) => Ord (Prefix n a) where
+instance (KnownNat n, n~n0+1, Ord a) => Ord (Prefix n a) where
   compare x y = foldr f EQ $ zipWith compare x y
     where f EQ   keepGoing = keepGoing
           f done _         = done
@@ -133,7 +133,7 @@ instance (KnownNat n,Show a) => Show (Prefix n a) where
 
 -- Generic (derive)
 
-instance (KnownNat n,Semigroup a) => Semigroup (Prefix n a) where
+instance (KnownNat n, n~n0+1, Semigroup a) => Semigroup (Prefix n a) where
   (<>) = zipWith (<>)
 
 instance (KnownNat n,n~n0+1,Monoid a) => Monoid (Prefix n a) where
@@ -200,13 +200,13 @@ at n Prefix'{end,vec} = if fromSNat n <= end then Just $ V.at n vec else Nothing
 
 -- incidesI = full $ indicesI
 
-findIndex :: KnownNat n => (a -> Bool) -> Prefix n a -> Maybe (Index n)
+findIndex :: (KnownNat n, n~n0+1) => (a -> Bool) -> Prefix n a -> Maybe (Index n)
 findIndex f = ifoldr (\i a b -> if f a then Just i else b) Nothing
 
-ifoldr ::  (KnownNat n) => (Index n -> a -> b -> b) -> b -> Prefix n a -> b
+ifoldr ::  (KnownNat n, n~n0+1) => (Index n -> a -> b -> b) -> b -> Prefix n a -> b
 ifoldr f b xs = foldr (uncurry f) b (zip V.indicesI xs)
 
-elemIndex :: (KnownNat n, Eq a) => a -> Prefix n a -> Maybe (Index n)
+elemIndex :: (KnownNat n, n~n0+1, Eq a) => a -> Prefix n a -> Maybe (Index n)
 elemIndex x = findIndex (x ==)
 
 
@@ -222,7 +222,7 @@ elemIndex x = findIndex (x ==)
 -- selectI?
 
 --subslice / subprefix
-subPrefix :: KnownNat n => Index n -> Prefix n a -> Prefix n a
+subPrefix :: (KnownNat n, n~n0+1) => Index n -> Prefix n a -> Prefix n a
 subPrefix e Prefix'{end,vec} = prefix (min e end) vec
 
 --toSlice -- defined in Slice
@@ -240,7 +240,7 @@ subPrefix e Prefix'{end,vec} = prefix (min e end) vec
 
 shiftIn :: KnownNat n => Prefix n a -> a -> Prefix n a
 shiftIn Prefix'{end,vec} x = Prefix'{end,vec=x +>> vec}
-prepend ::  (KnownNat n) => Prefix n a -> a -> Prefix (n+1) a
+prepend ::  (KnownNat n, n~n0+1) => Prefix n a -> a -> Prefix (n+1) a
 prepend Prefix'{end,vec} x = Prefix'{end=end',vec=x:>vec} --prefix only
   where end' = (unpack $ resize $ pack end) + 1
 
@@ -252,7 +252,7 @@ replace i y p@Prefix'{end,vec} = if fromIntegral (fromEnum i)<=end then Prefix'{
 -- shiftLeft = ??? -- slice only?
 -- shiftRight = ??? -- slice only?
 
-map :: (KnownNat n) => (a -> b) -> Prefix n a -> Prefix n b
+map :: (KnownNat n, n~n0+1) => (a -> b) -> Prefix n a -> Prefix n b
 map f Prefix'{end,vec} = prefix end $ fmap f vec
 -- imap = ??? --TODO
 -- smap = ??? --TODO
@@ -269,13 +269,13 @@ class (VLength a ~ VLength b) => Zippable a b where
 instance Zippable (Vec n a) (Vec n b) where
   type Zipped (Vec n a) (Vec n b) = Vec n (a,b)
   zip = V.zip
-instance (KnownNat n) => Zippable (Prefix n a) (Vec n b) where
+instance (KnownNat n, n~n0+1) => Zippable (Prefix n a) (Vec n b) where
   type Zipped (Prefix n a) (Vec n b) = Prefix n (a,b)
   zip Prefix'{end,vec} v = prefix end $ V.zip vec v
-instance (KnownNat n) => Zippable (Vec n a) (Prefix n b) where
+instance (KnownNat n, n~n0+1) => Zippable (Vec n a) (Prefix n b) where
   type Zipped (Vec n a) (Prefix n b) = Prefix n (a,b)
   zip v Prefix'{end,vec} = prefix end $ V.zip v vec
-instance (KnownNat n) => Zippable (Prefix n a) (Prefix n b) where
+instance (KnownNat n, n~n0+1) => Zippable (Prefix n a) (Prefix n b) where
   type Zipped (Prefix n a) (Prefix n b) = Prefix n (a,b)
   zip Prefix'{end,vec} Prefix'{end=end',vec=vec'} = prefix (min end end') $ V.zip vec vec'
 

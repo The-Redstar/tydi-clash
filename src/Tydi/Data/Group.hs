@@ -22,10 +22,10 @@ import Shockwaves.Viewer
 import Data.Typeable
 
 -- groups
-newtype Group a = Group a deriving (Generic,BitPack,NFDataX,Typeable)
+newtype Group a = Group a deriving (Generic,BitPack,NFDataX,Typeable,ShowX,Default)
 
 infixr 5 :&:
-data (:&:) l r = (:&:) l r deriving (Generic,BitPack,NFDataX,Typeable)
+data (:&:) l r = (:&:) l r deriving (Generic,BitPack,NFDataX,Typeable,ShowX,Default)
 
 
 

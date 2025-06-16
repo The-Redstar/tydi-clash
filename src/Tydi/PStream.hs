@@ -516,7 +516,7 @@ instance (CompleteComplexity' c n d u e, NFDataX (PStreamTransfer c n d u e)) =>
     strb = mkStrb' @(PStreamTransfer c n d u e) @(HasMultiStrb c) (repeat $ errorX s)
   }
   hasUndefined p = hasUndefined $ getTransfer p
-  ensureSpine p = either deepErrorX id $ isX p
+  ensureSpine p = undefined--either deepErrorX id $ isX p
   rnfX p = rnfX $ getTransfer p
 
 instance (

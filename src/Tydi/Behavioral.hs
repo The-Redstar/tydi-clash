@@ -166,10 +166,10 @@ checkBehav pstream ready = unbundle $ mealy go init' (bundle (pstream,ready))
 
         o = (p4,r4)
 
-        err1 = errorX "..."
-        err2 = errorX "..."
-        err3 = errorX "Last set in transfer after transfer containing data"
-        err4 = errorX "..."
+        err1 = errorX "C<2: Unfull data transfer before final transfer of sequence "
+        err2 = errorX "C<3" -- TODO
+        err3 = errorX "C<4: Last set in transfer after transfer containing data"
+        err4 = errorX "C<5" -- TODO
 
       -- where o = if (isValid p') && (r'==NotReady) && (p' != p) then
       --             (err,err)
